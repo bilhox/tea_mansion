@@ -11,4 +11,9 @@
    <property name="collider_type" value="platform"/>
   </properties>
  </tile>
+ <tile id="152" type="collider">
+  <properties>
+   <property name="collider_type" value="trap"/>
+  </properties>
+ </tile>
 </tileset>

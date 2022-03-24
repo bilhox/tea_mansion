@@ -18,13 +18,19 @@ def resolve_campos(camera : Camera , map_size):
      elif camera.pos.y + camera.size.y > map_size[1]*8:
           camera.pos.y = map_size[1]*8 - camera.size.y
 
+def display_platform(surface , collider : Collider , camera_pos : pygame.Vector2):
+     a = pygame.Surface([collider.rect.size.x , collider.rect.size.y])
+     a.fill([13 , 210 , 120])
+     surface.blit(a , [collider.rect.x - camera_pos.x , collider.rect.y - camera_pos.y])
+
 async def main():
      pygame.init()
      screen = pygame.display.set_mode([704 , 512] , SCALED+RESIZABLE)
-     player = Player([100 , 100])
 
      tilemap = TileMap("./assets/tilemaps/level_demo.tmx")
-                         
+
+     player = Player(tilemap.object_datas["player_spawn"]["coord"])
+     
      clock = pygame.time.Clock()
      MAX_FPS = 120
      font = pygame.font.Font(None , 20)
@@ -33,7 +39,7 @@ async def main():
      map_transition = False
      
      platform = Collider(FloatRect(pygame.Vector2(5*8,6*8),pygame.Vector2(32 , 8)),"platform")
-
+     platform_data = {"from":pygame.Vector2(32 , 8) , "to":pygame.Vector2(256 , 8) , "direction":True , "speed":.5}
      while True:
           
           game_timer += 1
@@ -53,7 +59,6 @@ async def main():
                elif event.type == KEYDOWN:
                     if event.key == K_c:
                          print(camera.pos)
-               
                if not map_transition:
                     player.event_handler(event)
           
@@ -70,7 +75,7 @@ async def main():
           # if (camera.pos.x - map_pos[0]*8*44 < 1 and camera.pos.y - map_pos[1]*8*32 < 1):
           if map_transition:
                camera_center = pygame.Vector2(player.map_pos[0]*8*44 , player.map_pos[1]*8*32)
-               camera.pos = pygame.Vector2.lerp(camera.pos , camera_center , min(10*dt , 1))
+               camera.pos = pygame.Vector2.lerp(camera.pos , camera_center , min(15*dt , 1))
           else:
                player.update(dt , max_fps=MAX_FPS)
                await player.move(rects)
@@ -84,8 +89,21 @@ async def main():
                     camera.pos = pygame.Vector2(player.map_pos[0]*8*44 , player.map_pos[1]*8*32)
                map_transition = False
           
+          if platform_data["direction"]:
+               platform.rect.x += platform_data["speed"] * dt * MAX_FPS
+               if platform.rect.x > platform_data["to"].x:
+                    platform_data["direction"] = False
+          else:
+               platform.rect.x -= platform_data["speed"] * dt * MAX_FPS
+               if platform.rect.x < platform_data["from"].x:
+                    platform_data["direction"] = True
+          
+          if player.dead:
+               player = Player([100 , 100])
+          
           display_layer(camera.render_surf ,tilemap.layers["background"],chunk="0,0")
           player.display(camera.render_surf , camera.pos)
+          display_platform(camera.render_surf , platform , camera.pos)
           display_layer(camera.render_surf ,tilemap.layers["foreground"],chunk=f"{player.map_pos[0]},{player.map_pos[1]}",offset=camera.pos)
           
           camera.display(screen)

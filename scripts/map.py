@@ -48,6 +48,7 @@ class TileMap():
           self.size = [0,0]
           self.collider_chunks = {}
           self.layers = {}
+          self.object_datas = {}
           
           root = parse(map_path).getroot()
           self.tileset , self.collider_types = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
@@ -73,8 +74,12 @@ class TileMap():
                                    # print(y)
                                    for x in range(cx*4 , (cx+1)*4):
                                         if (t_tab[y][x] != "0"):
-                                             rect = FloatRect(pygame.Vector2(x*8 , y*8) , pygame.Vector2(8,8))
-                                             c_chunk.append(Collider(rect , self.collider_types[int(t_tab[y][x])-1]))
+                                             size = pygame.Vector2(8,8)
+                                             if self.collider_types[int(t_tab[y][x])-1] == "trap":
+                                                  size = pygame.Vector2(8 , 1)
+                                             rect = FloatRect(pygame.Vector2(x*8 , y*8) , size)
+                                             collider = Collider(rect , self.collider_types[int(t_tab[y][x])-1])
+                                             c_chunk.append(collider)
                               if c_chunk != []:
                                    self.collider_chunks[pos] = c_chunk
                else:
@@ -92,6 +97,14 @@ class TileMap():
                               if t_chunk != []:
                                    layer_data[pos] = t_chunk  
                     self.layers[layer.get("name")] = layer_data
+          
+          object_group = root.find("objectgroup")
+          for obj in object_group.findall("object"):
+               data = {}
+               name = obj.get("name")
+               data["type"] = obj.get("type")
+               data["coord"] = pygame.Vector2(float(obj.get("x")) , float(obj.get("y")))
+               self.object_datas[name] = data
                         
           # with open(file=map_path , mode="r" , encoding="utf-8") as reader:
                

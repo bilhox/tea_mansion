@@ -8,7 +8,7 @@ from scripts.form import *
 class Player():
      
      def __init__(self , pos):
-          self.rect = FloatRect(pygame.Vector2(pos) , pygame.Vector2(8,12))
+          self.rect = FloatRect(pos , pygame.Vector2(8,12))
           self.keys = {"left":False , "right":False , "up":False , "down":False}
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
           self.n_gravity = 0.15
@@ -17,9 +17,12 @@ class Player():
           self.jump_amount = 4.5
           self.air_time = 0
           self.current_movement = pygame.Vector2(0,0)
+          self.dead = False
+          
           
           self.texture = pygame.Surface([8 , 12])
           self.texture.fill([123 , 45 , 234])
+          self.current_texture = self.texture
           self.chunk_pos = [int(self.rect.x // 32) , int(self.rect.y // 32)]
           self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
      
@@ -41,6 +44,9 @@ class Player():
                movement.x -= self.speed
           elif(self.keys["right"]):
                movement.x += self.speed
+          
+          self.current_texture = pygame.transform.scale(self.texture , [self.rect.size.x , self.rect.size.y+self.velocity_y*1.1])
+               
           
           movement *= dt * max_fps
           movement.x = min(movement.x , 3)
@@ -77,6 +83,8 @@ class Player():
                     elif (self.current_movement.x > 0):
                          self.rect.x = collider.rect.pos.x - self.rect.size.x
                          collision_side["right"] = True
+               elif (collider.type == "trap"):
+                    self.dead = True
           
           self.rect.pos.y += self.current_movement.y
           collided = self.collision(rects)
@@ -93,6 +101,8 @@ class Player():
                     if (self.rect.bottom - self.current_movement.y <= collider.rect.y and self.current_movement.y > 0):
                          self.rect.pos.y = collider.rect.y - self.rect.size.y
                          collision_side["bottom"] = True
+               elif (collider.type == "trap"):
+                    self.dead = True
           
           
           self.collision_side = collision_side
@@ -115,4 +125,4 @@ class Player():
      
      def display(self , screen , scroll):
           
-          screen.blit(self.texture , [self.rect.pos.x - scroll[0] , self.rect.pos.y - scroll[1]])
+          screen.blit(self.current_texture , [self.rect.pos.x - scroll[0] , self.rect.pos.y - scroll[1]])
