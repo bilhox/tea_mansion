@@ -4,6 +4,7 @@ import asyncio
 from math import *
 from pygame.locals import *
 from scripts.form import *
+from copy import *
 
 class Player():
      
@@ -11,10 +12,10 @@ class Player():
           self.rect = FloatRect(pos , pygame.Vector2(8,12))
           self.keys = {"left":False , "right":False , "up":False , "down":False}
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
-          self.n_gravity = 0.15
-          self.velocity_y = 0
-          self.speed = 1.75
-          self.jump_amount = 4.5
+          self.n_gravity = 0.125
+          self.velocity = pygame.Vector2(0,0)
+          self.speed = 1
+          self.jump_amount = 3.25
           self.air_time = 0
           self.current_movement = pygame.Vector2(0,0)
           self.dead = False
@@ -23,6 +24,9 @@ class Player():
           self.texture = pygame.Surface([8 , 12])
           self.texture.fill([123 , 45 , 234])
           self.current_texture = self.texture
+          
+          self.scale_offset = [0,0]
+          
           self.chunk_pos = [int(self.rect.x // 32) , int(self.rect.y // 32)]
           self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
      
@@ -36,30 +40,32 @@ class Player():
           self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
           
           self.air_time += 1
-          self.velocity_y = min(self.velocity_y + self.n_gravity * dt * max_fps , 5)
-          
-          movement = pygame.Vector2(0 , self.velocity_y)
+          self.velocity.y = min(self.velocity.y + self.n_gravity * dt * max_fps , 5)
           
           if(self.keys["left"]):
-               movement.x -= self.speed
+               self.velocity.x = -min(abs(self.velocity.x) + dt * max_fps * .15 * (self.speed - abs(self.velocity.x)) , self.speed)
           elif(self.keys["right"]):
-               movement.x += self.speed
+               self.velocity.x = min(abs(self.velocity.x) + dt * max_fps * .15 * (self.speed - abs(self.velocity.x)) , self.speed)
+          else:
+               self.velocity.x = 0
           
-          self.current_texture = pygame.transform.scale(self.texture , [self.rect.size.x , self.rect.size.y+self.velocity_y*1.1])
-               
+          movement = copy(self.velocity)
+          
+          self.current_texture = pygame.transform.scale(self.texture , [self.rect.size.x , self.rect.size.y+self.velocity.y*1.1])
+          self.scale_offset = [0 , self.velocity.y*1.1]
           
           movement *= dt * max_fps
           movement.x = min(movement.x , 3)
-          movement.y = min(movement.y , 8)
+          movement.y = min(movement.y , 2.5)
           self.current_movement = movement
           # print(self.rect.pos)
      
      def update_after_moved(self):
           if (self.collision_side["bottom"]):
                self.air_time = 0
-               self.velocity_y = 0
+               self.velocity.y = 0
           if (self.collision_side["top"]):
-               self.velocity_y = 1
+               self.velocity.y = 1
      
      def collision(self , rects):
           
@@ -116,7 +122,7 @@ class Player():
                     self.keys["left"] = True
                if event.key == K_s:
                     if (self.air_time <= 4):
-                         self.velocity_y = -(self.jump_amount)
+                         self.velocity.y = -(self.jump_amount)
           elif event.type == KEYUP:
                if event.key == K_d:
                     self.keys["right"] = False
@@ -125,4 +131,4 @@ class Player():
      
      def display(self , screen , scroll):
           
-          screen.blit(self.current_texture , [self.rect.pos.x - scroll[0] , self.rect.pos.y - scroll[1]])
+          screen.blit(self.current_texture , [self.rect.pos.x - scroll[0] - self.scale_offset[0] , self.rect.pos.y - scroll[1] - self.scale_offset[1]])

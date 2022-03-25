@@ -26,6 +26,7 @@ def display_platform(surface , collider : Collider , camera_pos : pygame.Vector2
 
 async def main():
      pygame.init()
+     pygame.mouse.set_visible(False)
      screen = pygame.display.set_mode([704 , 512] , SCALED+RESIZABLE)
 
      tilemap = TileMap("./assets/tilemaps/level_demo.tmx")

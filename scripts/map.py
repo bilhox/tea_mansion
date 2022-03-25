@@ -234,18 +234,18 @@ class Platform():
           # print(self.pos)
           if (self.platform_data["direction"]):
                
-               self.pos += self.move_vector * self.platform_data["speed"]
+               self.pos += self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
                for collider in self.colliders:
-                    collider.rect.pos += self.move_vector * self.platform_data["speed"]
+                    collider.rect.pos += self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
                distance_a = sqrt((self.platform_data["from"].x - self.pos.x)**2 + (self.platform_data["from"].y - self.pos.y)**2)
 
                
                if (self.distance - distance_a) <= 0:
                     self.platform_data["direction"] = False
           else:
-               self.pos -= self.move_vector * self.platform_data["speed"]
+               self.pos -= self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
                for collider in self.colliders:
-                    collider.rect.pos -= self.move_vector * self.platform_data["speed"]
+                    collider.rect.pos -= self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
                distance_a = sqrt((self.platform_data["to"].x - self.pos.x)**2 + (self.platform_data["to"].y - self.pos.y)**2)
                
                
