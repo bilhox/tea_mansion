@@ -5,7 +5,8 @@ import asyncio
 from pygame.locals import *
 from scripts.camera import Camera
 from scripts.entity import *
-from scripts.map import *    
+from scripts.map import *   
+from copy import * 
 
 def resolve_campos(camera : Camera , map_size):
      if camera.pos.x < 0:
@@ -29,7 +30,7 @@ async def main():
 
      tilemap = TileMap("./assets/tilemaps/level_demo.tmx")
 
-     player = Player(tilemap.object_datas["player_spawn"]["coord"])
+     player = Player(copy(tilemap.object_datas["player_spawn"]["coord"]))
      
      clock = pygame.time.Clock()
      MAX_FPS = 120
@@ -38,8 +39,6 @@ async def main():
      game_timer = 0
      map_transition = False
      
-     platform = Collider(FloatRect(pygame.Vector2(5*8,6*8),pygame.Vector2(32 , 8)),"platform")
-     platform_data = {"from":pygame.Vector2(32 , 8) , "to":pygame.Vector2(256 , 8) , "direction":True , "speed":.5}
      while True:
           
           game_timer += 1
@@ -62,6 +61,8 @@ async def main():
                if not map_transition:
                     player.event_handler(event)
           
+          tilemap.update_platforms(dt , MAX_FPS)
+          
           rects = []
           
           # print(map_pos)
@@ -71,7 +72,8 @@ async def main():
                          rects.extend(tilemap.collider_chunks[f"{player.chunk_pos[0]+x},{player.chunk_pos[1]+y}"])
                     except:
                          pass
-          rects.append(platform)
+          
+          rects.extend(tilemap.get_platform_colliders())
           # if (camera.pos.x - map_pos[0]*8*44 < 1 and camera.pos.y - map_pos[1]*8*32 < 1):
           if map_transition:
                camera_center = pygame.Vector2(player.map_pos[0]*8*44 , player.map_pos[1]*8*32)
@@ -89,23 +91,13 @@ async def main():
                     camera.pos = pygame.Vector2(player.map_pos[0]*8*44 , player.map_pos[1]*8*32)
                map_transition = False
           
-          if platform_data["direction"]:
-               platform.rect.x += platform_data["speed"] * dt * MAX_FPS
-               if platform.rect.x > platform_data["to"].x:
-                    platform_data["direction"] = False
-          else:
-               platform.rect.x -= platform_data["speed"] * dt * MAX_FPS
-               if platform.rect.x < platform_data["from"].x:
-                    platform_data["direction"] = True
-          
           if player.dead:
-               player = Player([100 , 100])
+               player = Player(copy(tilemap.object_datas["player_spawn"]["coord"]))
           
           display_layer(camera.render_surf ,tilemap.layers["background"],chunk="0,0")
           player.display(camera.render_surf , camera.pos)
-          display_platform(camera.render_surf , platform , camera.pos)
           display_layer(camera.render_surf ,tilemap.layers["foreground"],chunk=f"{player.map_pos[0]},{player.map_pos[1]}",offset=camera.pos)
-          
+          tilemap.display_platforms(camera.render_surf , camera.pos)
           camera.display(screen)
           screen.blit(font.render(str(int(clock.get_fps())) , True , [255 , 255 , 255]) , [0,0])
           
