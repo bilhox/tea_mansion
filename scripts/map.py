@@ -100,7 +100,7 @@ class TileMap():
                                              if int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))]) == 0: continue
                                              if (layer_name == "colliders"):
                                                   rect = FloatRect(pygame.Vector2(pos.x+x*8 , pos.y+y*8) , pygame.Vector2(8,8))
-                                                  collider = Collider(rect , self.collider_types[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1])
+                                                  collider = Collider(rect , [self.collider_types[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1]])
                                                   colliders.append(collider)
                                              else:
                                                   surf = self.tileset[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1]
@@ -131,7 +131,7 @@ class TileMap():
                                              if self.collider_types[int(t_tab[y][x])-1] == "trap":
                                                   size = pygame.Vector2(8 , 1)
                                              rect = FloatRect(pygame.Vector2(x*8 , y*8) , size)
-                                             collider = Collider(rect , self.collider_types[int(t_tab[y][x])-1])
+                                             collider = Collider(rect , [self.collider_types[int(t_tab[y][x])-1]])
                                              c_chunk.append(collider)
                               if c_chunk != []:
                                    self.collider_chunks[pos] = c_chunk

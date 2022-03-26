@@ -24,7 +24,7 @@ async def main():
 
      while True:
           
-          screen.fill([255,0,0])
+          screen.fill([0,0,0])
           
           for event in pygame.event.get():
                if (event.type == QUIT):
@@ -92,7 +92,8 @@ async def main():
                fR.rotation += 0.25
                
           await diag_collision(fR , fR2)
-          camera.display(screen , fR , fR2)
+          fR.draw(camera.render_surf , camera.pos)
+          fR2.draw(camera.render_surf , camera.pos)
           pygame.display.flip()
 
 if __name__ == "__main__":
