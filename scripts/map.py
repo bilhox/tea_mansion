@@ -91,6 +91,8 @@ class TileMap():
                               platform_data["to"] = t2_pos
                          elif prop_name == "speed":
                               platform_data["speed"] = float(prop.get("value"))
+                         elif prop_name == "pause_time":
+                              platform_data["pause_time"] = float(prop.get("value"))
                          elif prop_name == "layers_included":
                               layer_names = prop.get("value").split(";")
                               for layer_name in layer_names:
@@ -100,7 +102,8 @@ class TileMap():
                                              if int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))]) == 0: continue
                                              if (layer_name == "colliders"):
                                                   rect = FloatRect(pygame.Vector2(pos.x+x*8 , pos.y+y*8) , pygame.Vector2(8,8))
-                                                  collider = Collider(rect , [self.collider_types[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1]])
+                                                  collider = Collider(rect , self.collider_types[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1])
+                                                  collider.move_above = True
                                                   colliders.append(collider)
                                              else:
                                                   surf = self.tileset[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1]
@@ -131,7 +134,7 @@ class TileMap():
                                              if self.collider_types[int(t_tab[y][x])-1] == "trap":
                                                   size = pygame.Vector2(8 , 1)
                                              rect = FloatRect(pygame.Vector2(x*8 , y*8) , size)
-                                             collider = Collider(rect , [self.collider_types[int(t_tab[y][x])-1]])
+                                             collider = Collider(rect , self.collider_types[int(t_tab[y][x])-1])
                                              c_chunk.append(collider)
                               if c_chunk != []:
                                    self.collider_chunks[pos] = c_chunk
@@ -222,6 +225,8 @@ class Platform():
           self.pos = pos
           self.surface = surface
           self.colliders = colliders
+          self.paused = False
+          self.pause_timer = 0
           self.platform_data = platform_data
           
           self.distance = sqrt((self.platform_data["to"].x - self.platform_data["from"].x)**2 + (self.platform_data["to"].y - self.platform_data["from"].y)**2)
@@ -229,28 +234,38 @@ class Platform():
                self.move_vector = (self.platform_data["to"] - self.platform_data["from"]).normalize()
           except:
                self.move_vector = pygame.Vector2(0,0)
+          
+          self.pause_time = self.platform_data["pause_time"] if "pause_time" in self.platform_data.keys() else 0
                
      def update(self , dt , max_fps=60):
           # print(self.pos)
-          if (self.platform_data["direction"]):
-               
-               self.pos += self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
-               for collider in self.colliders:
-                    collider.rect.pos += self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
-               distance_a = sqrt((self.platform_data["from"].x - self.pos.x)**2 + (self.platform_data["from"].y - self.pos.y)**2)
+          if not self.paused:
+               if (self.platform_data["direction"]):
+                    
+                    self.pos += self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
+                    for collider in self.colliders:
+                         collider.move(self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1))
+                    distance_a = sqrt((self.platform_data["from"].x - self.pos.x)**2 + (self.platform_data["from"].y - self.pos.y)**2)
 
-               
-               if (self.distance - distance_a) <= 0:
-                    self.platform_data["direction"] = False
+                    
+                    if (self.distance - distance_a) <= 0:
+                         self.platform_data["direction"] = False
+                         self.paused = True
+               else:
+                    self.pos -= self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
+                    for collider in self.colliders:
+                         collider.move(-self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1))
+                    distance_a = sqrt((self.platform_data["to"].x - self.pos.x)**2 + (self.platform_data["to"].y - self.pos.y)**2)
+                    
+                    
+                    if (self.distance - distance_a) <= 0:
+                         self.platform_data["direction"] = True
+                         self.paused = True
           else:
-               self.pos -= self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
-               for collider in self.colliders:
-                    collider.rect.pos -= self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
-               distance_a = sqrt((self.platform_data["to"].x - self.pos.x)**2 + (self.platform_data["to"].y - self.pos.y)**2)
-               
-               
-               if (self.distance - distance_a) <= 0:
-                    self.platform_data["direction"] = True
+               self.pause_timer += dt
+               if self.pause_time - self.pause_timer <= 0:
+                    self.paused = False
+                    self.pause_timer = 0
      
      def display(self , surface , camera_pos=pygame.Vector2(0,0)):
           

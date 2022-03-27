@@ -115,11 +115,11 @@ async def main():
                if map_transition:
                     camera.pos = pygame.Vector2(player.map_pos[0]*8*44 , player.map_pos[1]*8*32)
                map_transition = False
-          
+               
           # Player death movement
           if player.dead:
                if death_timer == 0:
-                    particle_system.spawnparticles(20, circular=True)
+                    particle_system.spawnparticles(20, circular=False)
                death_timer += dt
                player.kinematic = True
                if (.6 - death_timer) <= 0:

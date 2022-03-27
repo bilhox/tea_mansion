@@ -71,6 +71,9 @@ class FloatRect:
      x = property(get_x , set_x)
      y = property(get_y , set_y)
      
+     def collidepoint(self , point : pygame.Vector2):
+          return (self.x <= point.x <= self.right and self.y <= point.y <= self.bottom)
+     
      def draw(self , surface , offset=pygame.Vector2(0,0) , ignore_transform=False):
           if not ignore_transform:
                pygame.draw.polygon(surface , self.color , self.get_vertices(True , offset) , self.border_thickness)
@@ -88,9 +91,25 @@ def collide_rect(r1 : FloatRect , r2 : FloatRect):
 
 class Collider():
      
-     def __init__(self , rect , type):
+     def __init__(self , rect : FloatRect , type : str):
           self.type = type
           self.rect = rect
+          self.entities_on = []
+          self.timer = 0
+          self.move_above = False
+     
+     def move(self , vector : pygame.Vector2):
+          self.rect.pos += vector
+          if self.move_above:
+               if self.entities_on != []:
+                    for entity in self.entities_on:
+                         entity.rect.pos += vector
+                         entity.on_moving_platform = False
+                         self.entities_on.remove(entity)
+                    # rect.pos = self.rect.pos + pygame.Vector2(rect.x - self.rect.x , rect.y - self.rect.y) + vector
+          
+          self.timer += 1
+               
      
 def SAT_collision(r1 : FloatRect , r2 : FloatRect):
      rect1 = r1.get_vertices()

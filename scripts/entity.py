@@ -20,6 +20,7 @@ class Player():
           self.current_movement = pygame.Vector2(0,0)
           self.dead = False
           self.kinematic = False
+          self.on_moving_platform = False
           
           self.texture = pygame.Surface([8 , 12])
           self.texture.fill([123 , 45 , 234])
@@ -83,14 +84,14 @@ class Player():
           if not self.kinematic:
                collided = self.collision(rects)
                for collider in collided:
-                    if (collider.type[0] == "block"):
+                    if (collider.type == "block"):
                          if (self.current_movement.x < 0):
                               self.rect.pos.x = collider.rect.x + collider.rect.size.x
                               collision_side["left"] = True
                          elif (self.current_movement.x > 0):
                               self.rect.x = collider.rect.pos.x - self.rect.size.x
                               collision_side["right"] = True
-                    elif (collider.type[0] == "trap"):
+                    elif (collider.type == "trap"):
                          self.dead = True
           
           self.rect.pos.y += self.current_movement.y
@@ -98,20 +99,24 @@ class Player():
                collided = self.collision(rects)
                
                for collider in collided:
-                    if (collider.type[0] == "block"):
+                    if (collider.type == "block"):
                          if (self.current_movement.y < 0):
                               self.rect.pos.y = collider.rect.y + collider.rect.size.y
                               collision_side["top"] = True
                          elif (self.current_movement.y > 0):
+                              if not self.on_moving_platform and collider.move_above:
+                                   self.on_moving_platform = True
+                                   collider.entities_on.append(self)
                               self.rect.pos.y = collider.rect.y - self.rect.size.y
                               collision_side["bottom"] = True
-                    elif (collider.type[0] == "platform"):
+                    elif (collider.type == "platform"):
                          if (floor(self.rect.bottom - self.current_movement.y) <= collider.rect.y and self.current_movement.y > 0):
+                              if not self.on_moving_platform and collider.move_above:
+                                   self.on_moving_platform = True
+                                   collider.entities_on.append(self)
                               self.rect.pos.y = collider.rect.y - self.rect.size.y
                               collision_side["bottom"] = True
-                         elif self.collision_side["bottom"]:
-                              print(self.current_movement.y , self.rect.bottom , self.rect.bottom - self.current_movement.y)
-                    elif (collider.type[0] == "trap"):
+                    elif (collider.type == "trap"):
                          self.dead = True
           
           
