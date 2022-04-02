@@ -94,21 +94,38 @@ class Collider():
      def __init__(self , rect : FloatRect , type : str):
           self.type = type
           self.rect = rect
-          self.entities_on = []
+          self.colliders_on = []
           self.timer = 0
           self.move_above = False
+          self.on_moving_platform = False
+          self.collider_under = None
+          
+     def set_on_moving_platform(self , case : bool , c=None):
+          if case:
+               self.on_moving_platform = True
+               # if c != None and self.collider_under == None:
+               c.colliders_on.append(self)
+               self.collider_under = c
+          else:
+               self.on_moving_platform = False
+               self.collider_under.colliders_on.remove(self)
+               self.collider_under = None
+               
      
      def move(self , vector : pygame.Vector2):
           self.rect.pos += vector
-          if self.move_above:
-               if self.entities_on != []:
-                    for entity in self.entities_on:
-                         entity.rect.pos += vector
-                         entity.on_moving_platform = False
-                         self.entities_on.remove(entity)
+          if self.colliders_on != []:
+               for c in self.colliders_on:
+                    c.rect.pos += vector
                     # rect.pos = self.rect.pos + pygame.Vector2(rect.x - self.rect.x , rect.y - self.rect.y) + vector
           
           self.timer += 1
+     
+     def collide(self , collider):
+          if collider in self.colliders_on:
+               return True
+          else:
+               return collide_rect(self.rect , collider.rect)
                
      
 def SAT_collision(r1 : FloatRect , r2 : FloatRect):

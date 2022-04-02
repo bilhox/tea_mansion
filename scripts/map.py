@@ -6,6 +6,7 @@ from pygame.locals import *
 from scripts.form import *
 from scripts.camera import *
 from math import *
+from copy import *
 
 def load_tileset(tsx_path):
      parsed = parse(tsx_path)
@@ -42,7 +43,7 @@ def load_tileset(tsx_path):
 
 class TileMap():
      
-     def __init__(self , map_path):
+     def __init__(self):
           
           self.tileset = []
           self.collider_types = {}
@@ -52,6 +53,7 @@ class TileMap():
           self.object_datas = {}
           self.platforms = []
           
+     def load_map(self , map_path):
           root = parse(map_path).getroot()
           self.tileset , self.collider_types = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
           self.size[0] = int(root.get("width"))
@@ -240,27 +242,45 @@ class Platform():
      def update(self , dt , max_fps=60):
           # print(self.pos)
           if not self.paused:
+               movement = self.move_vector * self.platform_data["speed"] * dt * max_fps
                if (self.platform_data["direction"]):
                     
-                    self.pos += self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
-                    for collider in self.colliders:
-                         collider.move(self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1))
-                    distance_a = sqrt((self.platform_data["from"].x - self.pos.x)**2 + (self.platform_data["from"].y - self.pos.y)**2)
-
+                    distance_a = sqrt((self.platform_data["from"].x - self.pos.x + movement.x)**2 + (self.platform_data["from"].y - self.pos.y + movement.y)**2)
                     
                     if (self.distance - distance_a) <= 0:
                          self.platform_data["direction"] = False
                          self.paused = True
-               else:
-                    self.pos -= self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1)
-                    for collider in self.colliders:
-                         collider.move(-self.move_vector * min(self.platform_data["speed"] * dt * max_fps , self.platform_data["speed"]+1))
-                    distance_a = sqrt((self.platform_data["to"].x - self.pos.x)**2 + (self.platform_data["to"].y - self.pos.y)**2)
+                         movement = self.platform_data["to"] - self.pos
                     
+                    self.pos += movement
+                    for collider in self.colliders:
+                         collider.move(movement)
+               else:
+                    
+                    distance_a = sqrt((self.platform_data["to"].x - self.pos.x - movement.x)**2 + (self.platform_data["to"].y - self.pos.y - movement.y)**2)
                     
                     if (self.distance - distance_a) <= 0:
                          self.platform_data["direction"] = True
                          self.paused = True
+                         movement = -(self.platform_data["from"] - self.pos)
+                    
+                    self.pos -= movement
+                    for collider in self.colliders:
+                         collider.move(-movement)
+                         
+                    # self.pos -= movement
+                    # distance_a = sqrt((self.platform_data["to"].x - self.pos.x)**2 + (self.platform_data["to"].y - self.pos.y)**2)
+                    # for collider in self.colliders:
+                    #      collider.move(-movement)
+                    # if (self.distance - distance_a) <= 0:
+                    #      self.platform_data["direction"] = True
+                    #      self.paused = True
+                    #      movement = self.platform_data["from"] - self.pos
+                    #      self.pos = self.platform_data["from"]
+                    #      for collider in self.colliders:
+                    #           collider.move(movement)
+                    
+                    
           else:
                self.pause_timer += dt
                if self.pause_time - self.pause_timer <= 0:

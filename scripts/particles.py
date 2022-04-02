@@ -37,16 +37,22 @@ class Particle_data():
           self.min_speed = 1
           self.max_speed = 1
           self.min_life_time = 1
-          self.turning = False
           self.max_life_time = 1
           self.particle_spawncoef = 1
           self.adding_particle_intervall = 10
           self.particle_surface = None
-          self.speed_reducing_coef = 0
-     
-     def set_spawnangle(self , angle_a , angle_b):
-          self.beginning_angle = angle_a
-          self.end_angle = angle_b
+          self.speed_multiplicator = 0
+          
+     def set_intervall(self , type : str , a , b):
+          if (type == "life_time"):
+               self.min_life_time = a
+               self.max_life_time = b
+          elif (type == "speed"):
+               self.min_speed = a
+               self.max_speed = b
+          elif (type == "angle"):
+               self.beginning_angle = a
+               self.end_angle = b
 
 class Particle_system():
      
@@ -62,18 +68,36 @@ class Particle_system():
           if self.infinite_spawn:
                self.tick_timer += 1
                self.spawnparticles(self.particle_spawncoef)
-          
+               
           for particle in self.particles:
                particle.update(dt , max_fps)
-               if self.data.turning:
-                    particle.direction = pygame.Vector2(
-                         particle.direction.x * cos(radians(2))- particle.direction.y*sin(radians(2)),
-                         particle.direction.x * sin(radians(2)) + particle.direction.y*cos(radians(2))
-                    )
                
-               particle.speed -= particle.speed * self.data.speed_reducing_coef
+               particle.speed *= self.data.speed_multiplicator**(dt * max_fps)
                if particle.end_life:
                     self.particles.remove(particle)
+          
+          # l = 0
+          # while (l < len(self.particles)):
+          #      self.particles[l].update(dt , max_fps)
+               
+          #      self.particles[l].speed *= self.data.speed_multiplicator**(dt * max_fps)
+          #      if self.particles[l].end_life:
+          #           self.particles.remove(self.particles[l])
+          #           l-=1
+               
+          #      l+=1
+               
+          #      try:
+          #           self.particles[l+1].update(dt , max_fps)
+               
+          #           self.particles[l+1].speed *= self.data.speed_multiplicator**(dt * max_fps)
+          #           if self.particles[l+1].end_life:
+          #                self.particles.remove(self.particles[l+1])
+          #                l-=1
+          #           l+=1
+          #      except:
+          #           pass
+               
      
      def spawnparticles(self , amount , circular=False):
           angle = 0
@@ -86,7 +110,7 @@ class Particle_system():
                          angle += (360 / amount)
                          t_dir = [cos(radians(angle)),sin(radians(angle))]
                     else:
-                         t_dir = [cos(uniform(radians(self.data.beginning_angle),radians(self.data.end_angle))),sin(uniform(radians(self.data.beginning_angle),radians(self.data.end_angle)))]
+                         t_dir = [cos(radians(self.data.beginning_angle+uniform(0 , self.data.end_angle))),sin(radians(self.data.beginning_angle+uniform(0 , self.data.end_angle)))]
                     
                     particle.direction = pygame.Vector2(t_dir)
                     particle.life_time = uniform(self.data.min_life_time , self.data.max_life_time)
@@ -96,6 +120,3 @@ class Particle_system():
      def display(self , surface , offset=pygame.Vector2(0,0)):
           for particle in self.particles:
                particle.display(surface , offset)
-     
-
-               

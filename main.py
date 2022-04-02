@@ -20,17 +20,23 @@ def resolve_campos(camera : Camera , map_size):
      elif camera.pos.y + camera.size.y > map_size[1]*8:
           camera.pos.y = map_size[1]*8 - camera.size.y
 
-def display_platform(surface , collider : Collider , camera_pos : pygame.Vector2):
-     a = pygame.Surface([collider.rect.size.x , collider.rect.size.y])
-     a.fill([13 , 210 , 120]) 
-     surface.blit(a , [collider.rect.x - camera_pos.x , collider.rect.y - camera_pos.y])
+def prepare_light_filter(rendering_size : list, light_sources : list[dict]):
+     filter = pygame.Surface(rendering_size , SRCALPHA)
+     filter.fill([0,0,0,128])
+     for light_source in light_sources:
+          source = pygame.Surface([light_source["radius"]*2 , light_source["radius"]*2])
+          pygame.draw.circle(source , light_source["color"] , [light_source["radius"]]*2 , light_source["radius"] )
+          filter.blit(source , [light_source["pos"][0] - light_source["radius"],light_source["pos"][1] - light_source["radius"]] , special_flags=BLEND_RGB_SUB)
+     
+     return filter
 
 async def main():
      pygame.init()
      pygame.mouse.set_visible(False)
-     screen = pygame.display.set_mode([704 , 512] , SCALED+RESIZABLE)
+     screen = pygame.display.set_mode([704 , 512])
 
-     tilemap = TileMap("./assets/tilemaps/level_demo.tmx")
+     tilemap = TileMap()
+     tilemap.load_map("./assets/tilemaps/level_demo.tmx")
 
      player = Player(copy(tilemap.object_datas["player_spawn"]["coord"]))
      
@@ -41,22 +47,19 @@ async def main():
      game_timer = 0
      death_timer = 0
      map_transition = False
+     # black_filter = prepare_light_filter(camera.render_surf.get_size() , [{"pos":[100 , 100],"radius":64,"color":[255 , 255 , 255 , 0]}])
      
      surf = pygame.Surface([7 , 7] , SRCALPHA)
      pygame.draw.circle(surf , [143 , 65 , 234] , [4,4] , 3)
      P_deathdata = Particle_data()
      P_deathdata.startpos = player.rect.pos
      P_deathdata.particle_surface = surf
-     P_deathdata.life_time = 1
      P_deathdata.adding_particle_intervall = 50
      P_deathdata.particle_spawncoef = 500
-     P_deathdata.set_spawnangle(0 ,360)
-     P_deathdata.min_speed = 2
-     P_deathdata.max_speed = 2
-     P_deathdata.min_life_time = .6
-     P_deathdata.max_life_time = .6
-     P_deathdata.speed_reducing_coef = 0.04
-     P_deathdata.turning = True
+     P_deathdata.set_intervall("angle" , 0 , 360)
+     P_deathdata.set_intervall("speed" , 1 , 4)
+     P_deathdata.set_intervall("life_time" , .6 , .6)
+     P_deathdata.speed_multiplicator = .94
      particle_system = Particle_system(P_deathdata)
      last_chunk_pos = "0,0"
      
@@ -73,11 +76,6 @@ async def main():
                if event.type == QUIT:
                     pygame.quit()
                     sys.exit(0)
-               elif event.type == MOUSEWHEEL:
-                    if event.y < 0:
-                         camera.size += pygame.Vector2(20 , 15)
-                    elif event.y > 0:
-                         camera.size -= pygame.Vector2(20 , 15)
                elif event.type == KEYDOWN:
                     if event.key == K_c:
                          print(camera.pos)
@@ -119,7 +117,7 @@ async def main():
           # Player death movement
           if player.dead:
                if death_timer == 0:
-                    particle_system.spawnparticles(20, circular=False)
+                    particle_system.spawnparticles(50, circular=True)
                death_timer += dt
                player.kinematic = True
                if (.6 - death_timer) <= 0:
@@ -132,6 +130,7 @@ async def main():
           
           #Affichage de tout les éléments (tilemap layers , player , particles , camera_surf , texts ..)
           display_layer(camera.render_surf ,tilemap.layers["background"],chunk="0,0")
+          # q
           if not player.dead:
                player.display(camera.render_surf , camera.pos)
           display_layer(camera.render_surf ,tilemap.layers["foreground"],chunk=last_chunk_pos,offset=camera.pos)
