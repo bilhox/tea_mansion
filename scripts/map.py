@@ -39,11 +39,11 @@ def load_tileset(tsx_path):
           except:
                pass
      
-     return tiles , colliders
+     return tiles , colliders , tile_size[0]
 
 class TileMap():
      
-     def __init__(self):
+     def __init__(self , chunk_size=[4,4]):
           
           self.tileset = []
           self.collider_types = {}
@@ -52,10 +52,12 @@ class TileMap():
           self.layers = {}
           self.object_datas = {}
           self.platforms = []
+          self.chunk_size = chunk_size
+          self.tilesize = 0
           
      def load_map(self , map_path):
           root = parse(map_path).getroot()
-          self.tileset , self.collider_types = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
+          self.tileset , self.collider_types , self.tilesize = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
           self.size[0] = int(root.get("width"))
           self.size[1] = int(root.get("height"))
           
@@ -99,18 +101,18 @@ class TileMap():
                               layer_names = prop.get("value").split(";")
                               for layer_name in layer_names:
                                    t_tab = layer_datas[layer_name]
-                                   for y in range(size[1]//8):
-                                        for x in range(size[0]//8):
-                                             if int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))]) == 0: continue
+                                   for y in range(size[1]//self.tilesize):
+                                        for x in range(size[0]//self.tilesize):
+                                             if int(t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))]) == 0: continue
                                              if (layer_name == "colliders"):
-                                                  rect = FloatRect(pygame.Vector2(pos.x+x*8 , pos.y+y*8) , pygame.Vector2(8,8))
-                                                  collider = Collider(rect , self.collider_types[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1])
+                                                  rect = FloatRect(pygame.Vector2(pos.x+x*self.tilesize , pos.y+y*self.tilesize) , pygame.Vector2(self.tilesize,self.tilesize))
+                                                  collider = Collider(rect , self.collider_types[int(t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))])-1])
                                                   collider.move_above = True
                                                   colliders.append(collider)
                                              else:
-                                                  surf = self.tileset[int(t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))])-1]
-                                                  surface.blit(surf , [x*8 , y*8])
-                                             t_tab[int(y+(pos.y // 8))][int(x+(pos.x // 8))] = "0"
+                                                  surf = self.tileset[int(t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))])-1]
+                                                  surface.blit(surf , [x*self.tilesize , y*self.tilesize])
+                                             t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))] = "0"
                     
                     self.platforms.append(Platform(pos,surface , colliders , platform_data))
                               
@@ -132,32 +134,32 @@ class TileMap():
                                    # print(y)
                                    for x in range(cx*4 , (cx+1)*4):
                                         if (t_tab[y][x] != "0"):
-                                             size = pygame.Vector2(8,8)
+                                             size = pygame.Vector2(self.tilesize,self.tilesize)
                                              if self.collider_types[int(t_tab[y][x])-1] == "trap":
-                                                  size = pygame.Vector2(8 , 1)
-                                             rect = FloatRect(pygame.Vector2(x*8 , y*8) , size)
+                                                  size = pygame.Vector2(self.tilesize , 1)
+                                             rect = FloatRect(pygame.Vector2(x*self.tilesize , y*self.tilesize) , size)
                                              collider = Collider(rect , self.collider_types[int(t_tab[y][x])-1])
                                              c_chunk.append(collider)
                               if c_chunk != []:
                                    self.collider_chunks[pos] = c_chunk
                else:
                     layer_data = {}
-                    for cy in range(0 , self.size[1] // 32):
-                         for cx in range(0 , self.size[0] // 44):
-                              chunk_surf = pygame.Surface([8*44 , 8*32] , SRCALPHA)
+                    for cy in range(0 , self.size[1] // self.chunk_size[1]):
+                         for cx in range(0 , self.size[0] // self.chunk_size[0]):
+                              chunk_surf = pygame.Surface([self.tilesize*self.chunk_size[0] , self.tilesize*self.chunk_size[1]] , SRCALPHA)
                               pos = f"{cx},{cy}"
                               py = 0
-                              for y in range(cy*32 , (cy+1)*32):
+                              for y in range(cy*self.chunk_size[1] , (cy+1)*self.chunk_size[1]):
                                    px = 0
-                                   for x in range(cx*44 , (cx+1)*44):
+                                   for x in range(cx*self.chunk_size[0] , (cx+1)*self.chunk_size[0]):
                                         if (t_tab[y][x] != "0"):
-                                             chunk_surf.blit(self.tileset[int(t_tab[y][x])-1] , [px*8 , py*8])
+                                             chunk_surf.blit(self.tileset[int(t_tab[y][x])-1] , [px*self.tilesize , py*self.tilesize])
                                         px += 1
                                    py += 1
                               layer_data[pos] = chunk_surf  
                     self.layers[key] = layer_data
                         
-          # with open(file=map_path , mode="r" , encoding="utf-8") as reader:
+          # with open(file=map_path , mode="r" , encoding="utf-self.tilesize") as reader:
                
           #      content = reader.readlines()
           #      data = []
@@ -175,11 +177,11 @@ class TileMap():
           #                     # print(y)
           #                     for x in range(cx*4 , (cx+1)*4):
           #                          if (data[y][x] == "1"):
-          #                               rect = FloatRect(pygame.Vector2(x*8 , y*8) , pygame.Vector2(8,8))
+          #                               rect = FloatRect(pygame.Vector2(x*self.tilesize , y*self.tilesize) , pygame.Vector2(self.tilesize,self.tilesize))
           #                               c_chunk.append(rect)
-          #                               surf = pygame.Surface([8 , 8])
+          #                               surf = pygame.Surface([self.tilesize , self.tilesize])
           #                               surf.fill([230 , 67 , 34])
-          #                               tile = Tile([x*8 , y*8],surf)
+          #                               tile = Tile([x*self.tilesize , y*self.tilesize],surf)
           #                               t_chunk.append(tile)
                                    
           #                self.texture_chunks[pos] = t_chunk
@@ -202,15 +204,15 @@ class TileMap():
           for platform in self.platforms:
                platform.display(surface , camera_pos)
 
-def display_layer(surface , layer , chunk , offset=pygame.Vector2(0,0)):
-     
-     try: 
-          pos = [int(val) for val in chunk.split(",")]
-          pos[0] *= 44*8
-          pos[1] *= 32*8
-          surface.blit(layer[chunk] , [(pos[0] - offset.x) , (pos[1] - offset.y)])
-     except:
-          print("nope")
+     def display_layer(self , surface , layer , chunk , offset=pygame.Vector2(0,0)):
+          
+          try: 
+               pos = [int(val) for val in chunk.split(",")]
+               pos[0] *= self.chunk_size[0]*self.tilesize
+               pos[1] *= self.chunk_size[1]*self.tilesize
+               surface.blit(self.layers[layer][chunk] , [(pos[0] - offset.x) , (pos[1] - offset.y)])
+          except:
+               print("nope")
           
                          
      

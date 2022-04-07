@@ -35,7 +35,7 @@ async def main():
      pygame.mouse.set_visible(False)
      screen = pygame.display.set_mode([704 , 512])
 
-     tilemap = TileMap()
+     tilemap = TileMap(chunk_size=[44 , 32])
      tilemap.load_map("./assets/tilemaps/level_demo.tmx")
 
      player = Player(copy(tilemap.object_datas["player_spawn"]["coord"]))
@@ -60,7 +60,7 @@ async def main():
      P_deathdata.set_intervall("speed" , 1 , 4)
      P_deathdata.set_intervall("life_time" , .6 , .6)
      P_deathdata.speed_multiplicator = .94
-     particle_system = Particle_system(P_deathdata)
+     particle_system = Particle_system()
      last_chunk_pos = "0,0"
      
      while True:
@@ -117,23 +117,26 @@ async def main():
           # Player death movement
           if player.dead:
                if death_timer == 0:
-                    particle_system.spawnparticles(50, circular=True)
+                    particle_system.spawnparticles(50, P_deathdata , circular=True)
                death_timer += dt
                player.kinematic = True
                if (.6 - death_timer) <= 0:
                     death_timer = 0
-                    player = Player(copy(tilemap.object_datas["player_spawn"]["coord"]))
+                    player.rect.pos = copy(tilemap.object_datas["player_spawn"]["coord"])
+                    player.kinematic = False
+                    player.dead = False
+                    player.reset_keys()
                     P_deathdata.startpos = player.rect.pos
           else:
                last_chunk_pos = f"{player.map_pos[0]},{player.map_pos[1]}"
           
           
           #Affichage de tout les éléments (tilemap layers , player , particles , camera_surf , texts ..)
-          display_layer(camera.render_surf ,tilemap.layers["background"],chunk="0,0")
+          tilemap.display_layer(camera.render_surf ,"background",chunk="0,0")
           # q
           if not player.dead:
                player.display(camera.render_surf , camera.pos)
-          display_layer(camera.render_surf ,tilemap.layers["foreground"],chunk=last_chunk_pos,offset=camera.pos)
+          tilemap.display_layer(camera.render_surf ,"foreground",chunk=last_chunk_pos,offset=camera.pos)
           tilemap.display_platforms(camera.render_surf , camera.pos)
           particle_system.display(camera.render_surf , camera.pos)
           camera.display(screen)

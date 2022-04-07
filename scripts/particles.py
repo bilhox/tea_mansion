@@ -15,11 +15,13 @@ class Particle():
           self.direction = pygame.Vector2(0,0)
           self.surface = surface
           self.end_life = False
+          self.speed_multiplicator = 1
      
      def update(self , dt , max_fps=60):
           self.pos += self.direction * self.speed * dt * max_fps
           self.timer += dt
-          
+          if self.speed_multiplicator != 1:
+               self.speed *= self.speed_multiplicator**(dt * max_fps)
           if (self.life_time - self.timer) <= 0:
                self.end_life = True
      
@@ -56,65 +58,35 @@ class Particle_data():
 
 class Particle_system():
      
-     def __init__(self , particle_data : Particle_data):
+     def __init__(self):
           
-          self.data = particle_data
           self.particles = []
-          self.tick_timer = 0
-          self.infinite_spawn = False
      
      def update(self , dt , max_fps=60):
-          
-          if self.infinite_spawn:
-               self.tick_timer += 1
-               self.spawnparticles(self.particle_spawncoef)
                
           for particle in self.particles:
                particle.update(dt , max_fps)
                
-               particle.speed *= self.data.speed_multiplicator**(dt * max_fps)
                if particle.end_life:
                     self.particles.remove(particle)
-          
-          # l = 0
-          # while (l < len(self.particles)):
-          #      self.particles[l].update(dt , max_fps)
-               
-          #      self.particles[l].speed *= self.data.speed_multiplicator**(dt * max_fps)
-          #      if self.particles[l].end_life:
-          #           self.particles.remove(self.particles[l])
-          #           l-=1
-               
-          #      l+=1
-               
-          #      try:
-          #           self.particles[l+1].update(dt , max_fps)
-               
-          #           self.particles[l+1].speed *= self.data.speed_multiplicator**(dt * max_fps)
-          #           if self.particles[l+1].end_life:
-          #                self.particles.remove(self.particles[l+1])
-          #                l-=1
-          #           l+=1
-          #      except:
-          #           pass
                
      
-     def spawnparticles(self , amount , circular=False):
+     def spawnparticles(self , amount , data , circular=False):
           angle = 0
           for i in range (amount):
-               if (self.tick_timer % self.data.adding_particle_intervall) == 0:
-                    particle = Particle(copy(self.data.startpos) , self.data.particle_surface)
-                    particle.speed = uniform(self.data.min_speed , self.data.max_speed)
-                    t_dir = None
-                    if circular:
-                         angle += (360 / amount)
-                         t_dir = [cos(radians(angle)),sin(radians(angle))]
-                    else:
-                         t_dir = [cos(radians(self.data.beginning_angle+uniform(0 , self.data.end_angle))),sin(radians(self.data.beginning_angle+uniform(0 , self.data.end_angle)))]
-                    
-                    particle.direction = pygame.Vector2(t_dir)
-                    particle.life_time = uniform(self.data.min_life_time , self.data.max_life_time)
-                    self.particles.append(particle)
+               particle = Particle(copy(data.startpos) , data.particle_surface)
+               particle.speed = uniform(data.min_speed , data.max_speed)
+               t_dir = None
+               if circular:
+                    angle += (360 / amount)
+                    t_dir = [cos(radians(angle)),sin(radians(angle))]
+               else:
+                    t_dir = [cos(radians(data.beginning_angle+uniform(0 , data.end_angle))),sin(radians(data.beginning_angle+uniform(0 , data.end_angle)))]
+               
+               particle.direction = pygame.Vector2(t_dir)
+               particle.life_time = uniform(data.min_life_time , data.max_life_time)
+               particle.speed_multiplicator = data.speed_multiplicator
+               self.particles.append(particle)
                     
           
      def display(self , surface , offset=pygame.Vector2(0,0)):

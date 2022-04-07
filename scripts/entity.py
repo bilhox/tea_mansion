@@ -28,7 +28,7 @@ class Player():
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
           self.n_gravity = 0.125
           self.velocity = pygame.Vector2(0,0)
-          self.speed = 1 
+          self.speed = 1.2 
           self.jump_amount = 3.25
           self.air_time = 0
           self.current_movement = pygame.Vector2(0,0)
@@ -75,8 +75,6 @@ class Player():
           
           movement = copy(self.velocity)
           
-          self.current_texture = pygame.transform.scale(self.texture , [self.rect.size.x , self.rect.size.y+self.velocity.y*1.1])
-          self.scale_offset = [0 , self.velocity.y*1.1]
           
           movement *= dt * max_fps
           movement.x = max(min(movement.x , 3),-3)
