@@ -34,6 +34,7 @@ class Particle_data():
      def __init__(self):
           
           self.startpos = pygame.Vector2(0,0)
+          self.endpos = pygame.Vector2(0,0)
           self.beginning_angle = -80
           self.end_angle = -100
           self.min_speed = 1
@@ -42,7 +43,7 @@ class Particle_data():
           self.max_life_time = 1
           self.particle_spawncoef = 1
           self.adding_particle_intervall = 10
-          self.particle_surface = None
+          self.particle_surfaces = []
           self.speed_multiplicator = 0
           
      def set_intervall(self , type : str , a , b):
@@ -55,6 +56,9 @@ class Particle_data():
           elif (type == "angle"):
                self.beginning_angle = a
                self.end_angle = b
+          elif (type == "pos"):
+               self.startpos = a
+               self.endpos = b
 
 class Particle_system():
      
@@ -71,10 +75,10 @@ class Particle_system():
                     self.particles.remove(particle)
                
      
-     def spawnparticles(self , amount , data , circular=False):
+     def spawnparticles(self , amount , data : Particle_data , circular=False):
           angle = 0
           for i in range (amount):
-               particle = Particle(copy(data.startpos) , data.particle_surface)
+               particle = Particle(pygame.Vector2(uniform(data.startpos.x , data.endpos.x) , uniform(data.startpos.y , data.endpos.y)) , choice(data.particle_surfaces))
                particle.speed = uniform(data.min_speed , data.max_speed)
                t_dir = None
                if circular:

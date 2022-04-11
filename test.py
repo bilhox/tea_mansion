@@ -24,8 +24,9 @@ async def main():
 
      while True:
           
-          screen.fill([0,0,0])
-          
+
+          camera.erase_surf([0,0,0])
+          camera.update()
           for event in pygame.event.get():
                if (event.type == QUIT):
                     pygame.quit()
@@ -94,6 +95,7 @@ async def main():
           await diag_collision(fR , fR2)
           fR.draw(camera.render_surf , camera.pos)
           fR2.draw(camera.render_surf , camera.pos)
+          camera.display(screen)
           pygame.display.flip()
 
 if __name__ == "__main__":

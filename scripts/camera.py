@@ -19,7 +19,7 @@ class Camera():
      def erase_surf(self , color):
           self.render_surf.fill(color)
      
-     def update(self):
+     def update(self , dt , max_fps=60):
           if (self.render_surf.get_width() != self.size.x or self.render_surf.get_height() != self.size.y):
                self.render_surf = pygame.Surface(self.rect.size)
      

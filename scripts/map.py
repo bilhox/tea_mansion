@@ -3,6 +3,7 @@ import pygame
 
 from xml.etree.ElementTree import *
 from pygame.locals import *
+from scripts.entity import Book
 from scripts.form import *
 from scripts.camera import *
 from math import *
@@ -54,6 +55,7 @@ class TileMap():
           self.platforms = []
           self.chunk_size = chunk_size
           self.tilesize = 0
+          self.books = []
           
      def load_map(self , map_path):
           root = parse(map_path).getroot()
@@ -115,7 +117,8 @@ class TileMap():
                                              t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))] = "0"
                     
                     self.platforms.append(Platform(pos,surface , colliders , platform_data))
-                              
+               elif obj.get("type") == "book":
+                    self.books.append(Book(pygame.Vector2(float(obj.get("x")) , float(obj.get("y"))) , pygame.Vector2(8,8)))
                else:
                     data = {}
                     name = obj.get("name")
@@ -200,6 +203,10 @@ class TileMap():
           for platform in self.platforms:
                platform.update(dt , max_fps)
      
+     def update_books(self , dt , max_fps=60):
+          for book in self.books:
+               book.update(dt , max_fps)
+     
      def display_platforms(self , surface , camera_pos=pygame.Vector2(0,0)):
           for platform in self.platforms:
                platform.display(surface , camera_pos)
@@ -212,8 +219,11 @@ class TileMap():
                pos[1] *= self.chunk_size[1]*self.tilesize
                surface.blit(self.layers[layer][chunk] , [(pos[0] - offset.x) , (pos[1] - offset.y)])
           except:
-               print("nope")
-          
+               pass
+     
+     def display_books(self , surface , offset):
+          for book in self.books:
+               book.display(surface , offset)     
                          
      
 
