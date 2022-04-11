@@ -10,12 +10,11 @@ from scripts.particles import *
 from scripts.text import *
 from scenes import game , menu , scene
 
-class Game():
+class App():
      
      def __init__(self):
           pygame.init()
-          pygame.mouse.set_visible(False)
-          self.screen = pygame.display.set_mode([704 , 512])
+          self.screen = pygame.display.set_mode([750 , 550])
           pygame.display.set_caption("Tea Mansion - v0.5.2")
           self.scene_manager = scene.Scene_Manager()
           self.scene_manager.scenes = {
@@ -31,5 +30,5 @@ class Game():
                self.scene_manager.current_scene.update(self.clock)
 
 if __name__ == "__main__":
-     game = Game()
-     game.main_loop()
+     app = App()
+     app.main_loop()

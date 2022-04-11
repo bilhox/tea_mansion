@@ -10,6 +10,7 @@ from scripts.map import *
 class Game(Scene):
      
      def __init__(self , screen , scene_manager):
+          
           super().__init__(screen , scene_manager)
           self.tilemap = TileMap(chunk_size=[44 , 32])
           self.camera = Camera([0,0] , [352 , 256])
@@ -28,6 +29,7 @@ class Game(Scene):
      
      def start(self):
           
+          pygame.mouse.set_visible(False)
           self.tilemap.load_map("./assets/tilemaps/level_demo.tmx")
           self.player = Player(copy(self.tilemap.object_datas["player_spawn"]["coord"]))
           
@@ -45,10 +47,10 @@ class Game(Scene):
           
           border = pygame.image.load("./assets/border_shadow.png").convert_alpha()
           
-          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.size.x , 12]) , [0 , self.camera.size.y - 12])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , -90) , [0 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , 90) , [self.camera.size.x - 12 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.x , 12]) , 180) , [0 , 0])
+          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.size.x , 12]) , [0 , self.camera.size.y - 10])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , -90) , [-2 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , 90) , [self.camera.size.x - 10 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.x , 12]) , 180) , [0 , -2])
      
      def update(self , clock):
           dt = min(clock.tick(MAX_FPS) * 0.001 , 10)
@@ -148,7 +150,7 @@ class Game(Scene):
           self.tilemap.display_books(self.camera.render_surf , self.camera.pos)
           self.camera.render_surf.blit(self.black_filter , [0,0])
           self.camera.render_surf.blit(self.bs_filter , [0,0])
-          self.camera.display(self.screen)
+          self.camera.display(self.screen , Rect([23,19],[704 , 512]))
           self.screen.blit(self.font.render(str(int(clock.get_fps())) , True , [255 , 255 , 255]) , [0,0])
           self.screen.blit(self.font.render(str(len(self.particle_system.particles)) , True , [255 , 255 , 255]) , [0,12])
           pygame.display.flip()

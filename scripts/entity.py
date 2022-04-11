@@ -198,8 +198,8 @@ class Book(Sprite):
           self.particle_data = Particle_data()
           self.particle_data.set_intervall("pos" , self.rect.pos , self.rect.pos)
           self.particle_data.set_intervall("angle" , 0 , 360)
-          self.particle_data.set_intervall("speed" , 1.4 , 1.8)
-          self.particle_data.set_intervall("life_time" , 0.5 , 1)
+          self.particle_data.set_intervall("speed" , 1.6 , 2)
+          self.particle_data.set_intervall("life_time" , 0.8 , 1)
           self.particle_data.speed_multiplicator = 0.94
           
           p_surfaces = []

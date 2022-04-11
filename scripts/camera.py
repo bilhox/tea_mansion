@@ -23,8 +23,8 @@ class Camera():
           if (self.render_surf.get_width() != self.size.x or self.render_surf.get_height() != self.size.y):
                self.render_surf = pygame.Surface(self.rect.size)
      
-     def display(self , screen):
-          screen.blit(pygame.transform.scale(self.render_surf , screen.get_size()) , [0,0])
+     def display(self , screen , display_rect : Rect):
+          screen.blit(pygame.transform.scale(self.render_surf , display_rect.size) , [display_rect.x , display_rect.y])
      
      # def display(self , screen , *drawables):
           

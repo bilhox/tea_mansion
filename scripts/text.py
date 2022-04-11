@@ -39,49 +39,46 @@ class Font():
         self.space_width = self.letter_spacing[0]
         self.base_spacing = 1
         self.line_spacing = 2
-        self.text_zoom = text_zoom
     
     @property
     def height(self):
-        return self.line_height * self.text_zoom
+        return self.line_height
 
     def width(self, text):
         text_width = 0
         for char in text:
             if char == ' ':
-                text_width += self.space_width * self.text_zoom + self.base_spacing
+                text_width += self.space_width + self.base_spacing
             else:
-                text_width += self.letter_spacing[self.font_order.index(char)] * self.text_zoom + self.base_spacing
+                text_width += self.letter_spacing[self.font_order.index(char)] + self.base_spacing
         return text_width
 
-    def render(self, text, surf, loc, line_width=0 , zoom=1):
+    def render(self, text , zoom=1):
+        
+        width = 0
+        height = self.line_height*zoom
+        
+        for char in text:
+            if char not in ["\n" , ' ']:
+                l = self.font_order.index(char)
+                width += self.letters[l].get_width()*zoom + self.base_spacing * zoom
+            elif char == " ":
+                width += (self.space_width + self.base_spacing) * zoom
+        
+        final_surf = pygame.Surface([width , height])
         x_offset = 0
         y_offset = 0
-        if line_width != 0:
-            spaces = []
-            x = 0
-            for i, char in enumerate(text):
-                if char == ' ':
-                    spaces.append((x, i))
-                    x += (self.space_width + self.base_spacing) * zoom
-                else:
-                    x += self.letter_spacing[self.font_order.index(char)]*zoom + self.base_spacing * zoom
-            line_offset = 0
-            for i, space in enumerate(spaces):
-                if (space[0] - line_offset) > line_width:
-                    line_offset += spaces[i - 1][0] - line_offset
-                    if i != 0:
-                        text = text[:spaces[i - 1][1]] + '\n' + text[spaces[i - 1][1] + 1:]
         for char in text:
             if char not in ['\n', ' ']:
                 l = self.font_order.index(char)
                 surface = pygame.transform.scale(self.letters[l] , [self.letters[l].get_width()*zoom , self.letters[l].get_height()*zoom])
-                surf.blit(surface, (loc[0] + x_offset, loc[1] + y_offset))
+                final_surf.blit(surface, (x_offset, y_offset))
                 x_offset += surface.get_width() + self.base_spacing * zoom
             elif char == ' ':
                 x_offset += (self.space_width + self.base_spacing) * zoom
             else:
-                y_offset += surface.get_width()*zoom + self.height
+                y_offset += surface.get_height()*zoom + self.height
                 x_offset = 0
         
+        return final_surf
         # print(x_offset)
