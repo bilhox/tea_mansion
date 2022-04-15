@@ -1,5 +1,6 @@
 import os
 import pygame
+import json
 
 from xml.etree.ElementTree import *
 from pygame.locals import *
@@ -138,8 +139,6 @@ class TileMap():
                                    for x in range(cx*4 , (cx+1)*4):
                                         if (t_tab[y][x] != "0"):
                                              size = pygame.Vector2(self.tilesize,self.tilesize)
-                                             if self.collider_types[int(t_tab[y][x])-1] == "trap":
-                                                  size = pygame.Vector2(self.tilesize , 1)
                                              rect = FloatRect(pygame.Vector2(x*self.tilesize , y*self.tilesize) , size)
                                              collider = Collider(rect , self.collider_types[int(t_tab[y][x])-1])
                                              c_chunk.append(collider)
@@ -161,34 +160,6 @@ class TileMap():
                                    py += 1
                               layer_data[pos] = chunk_surf  
                     self.layers[key] = layer_data
-                        
-          # with open(file=map_path , mode="r" , encoding="utf-self.tilesize") as reader:
-               
-          #      content = reader.readlines()
-          #      data = []
-          #      for line in content:
-          #           data.append(line.strip("\n"))
-               
-          #      self.size[0] = len(data[0])
-          #      self.size[1] = len(data)
-          #      for cy in range(0 , self.size[1] // 4):
-          #           for cx in range(0 , self.size[0] // 4):
-          #                c_chunk = []
-          #                t_chunk = []
-          #                pos = f"{cx},{cy}"
-          #                for y in range(cy*4 , (cy+1)*4):
-          #                     # print(y)
-          #                     for x in range(cx*4 , (cx+1)*4):
-          #                          if (data[y][x] == "1"):
-          #                               rect = FloatRect(pygame.Vector2(x*self.tilesize , y*self.tilesize) , pygame.Vector2(self.tilesize,self.tilesize))
-          #                               c_chunk.append(rect)
-          #                               surf = pygame.Surface([self.tilesize , self.tilesize])
-          #                               surf.fill([230 , 67 , 34])
-          #                               tile = Tile([x*self.tilesize , y*self.tilesize],surf)
-          #                               t_chunk.append(tile)
-                                   
-          #                self.texture_chunks[pos] = t_chunk
-          #                self.collider_chunks[pos] = c_chunk
           
           # print(self.chunks)
           
@@ -302,3 +273,17 @@ class Platform():
      def display(self , surface , camera_pos=pygame.Vector2(0,0)):
           
           surface.blit(self.surface , [self.pos.x - camera_pos.x , self.pos.y - camera_pos.y])
+
+
+class Level:
+     
+     def __init__(self , json_path):
+          r = open(json_path)
+          data = json.load(r)
+          r.close()
+          
+          self.tilemap = TileMap(chunk_size=[44 , 32])
+          self.tilemap.load_map(data["map_path"])
+          
+          self.name = data["name"]
+          self.n_book = data["book_number"]

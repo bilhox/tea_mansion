@@ -5,6 +5,7 @@ from math import *
 from pygame.locals import *
 from scripts.form import *
 from scripts.particles import *
+from random import *
 from copy import *
 
 class Sprite():
@@ -222,29 +223,38 @@ class Book(Sprite):
           self.light.blit(mult_surf , (0 , 0), special_flags=BLEND_RGBA_MULT)
           
           mult_surf = self.light.copy()
-          mult_surf.fill([255, 216, 110])
+          mult_surf.fill([randint(0 , 255), randint(0 , 255), randint(0 , 255)])
           self.light.blit(mult_surf , (0 , 0) , special_flags=BLEND_RGBA_MULT)
           
+          self.caught = False
+          self.to_remove = False
           
+     def is_caught(self):
+          self.caught = True
+          self.part_system.spawnparticles(100 , self.particle_data , circular=True)
+      
      def update(self , dt , max_fps=60):
           super().update(dt , max_fps)
-          self.anim_timer += dt
-
-          self.part_timer += 1
-          
-          if self.part_timer % 10 == 0:
-               self.part_system.spawnparticles(2 , self.particle_data)
-               self.part_timer = 0
-          
           self.part_system.update(dt , max_fps)
-          if 0.2 - self.anim_timer <= 0:
-               self.anim_timer = 0
-               self.anim_offset.y += (1 if self.anim_dir else -1)
-          
-          if self.anim_offset.y == 2 or self.anim_offset.y == -2:
-               self.anim_dir = False if self.anim_dir else True
-               self.anim_timer = 0
-               self.anim_offset.y += (1 if self.anim_dir else -1)
+          if not self.caught:
+               self.anim_timer += dt
+
+               self.part_timer += 1
+               
+               if self.part_timer % 10 == 0:
+                    self.part_system.spawnparticles(2 , self.particle_data)
+                    self.part_timer = 0
+               if 0.2 - self.anim_timer <= 0:
+                    self.anim_timer = 0
+                    self.anim_offset.y += (1 if self.anim_dir else -1)
+               
+               if self.anim_offset.y == 2 or self.anim_offset.y == -2:
+                    self.anim_dir = False if self.anim_dir else True
+                    self.anim_timer = 0
+                    self.anim_offset.y += (1 if self.anim_dir else -1)
+          else:
+               if len(self.part_system.particles) == 0:
+                    self.to_remove = True
      
      def display_light(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.light.get_size())
@@ -255,4 +265,5 @@ class Book(Sprite):
           surf_size = pygame.Vector2(self.surface.get_size())
           text_offset = offset+self.anim_offset-(self.rect.size / 2 - surf_size / 2)
           self.part_system.display(surface ,offset-self.rect.size / 2)
-          super().display(surface , text_offset)
+          if not self.caught:
+               super().display(surface , text_offset)

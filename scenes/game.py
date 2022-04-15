@@ -6,17 +6,20 @@ from pygame.locals import *
 from scripts.camera import *
 from scripts.entity import *
 from scripts.map import *
+from scripts.text import *
 
 class Game(Scene):
      
      def __init__(self , screen , scene_manager):
           
           super().__init__(screen , scene_manager)
-          self.tilemap = TileMap(chunk_size=[44 , 32])
+          self.level = Level("./assets/levels/level_demo.json")
+          self.tilemap = self.level.tilemap
           self.camera = Camera([0,0] , [352 , 256])
           self.font = pygame.font.Font(None , 20)
           self.game_timer = 0
           self.death_timer = 0
+          self.book_caught = 0
           self.map_transition = False
           
           self.black_filter = pygame.Surface([self.camera.rect.size.x , self.camera.rect.size.y] , SRCALPHA)
@@ -25,15 +28,16 @@ class Game(Scene):
           self.particle_system = Particle_system()
           
           self.bs_filter = pygame.Surface([self.camera.size.x , self.camera.size.y] , SRCALPHA)
-     
+          self.game_timer = 0
+
+          self.images = []
      
      def start(self):
           
           pygame.mouse.set_visible(False)
-          self.tilemap.load_map("./assets/tilemaps/level_demo.tmx")
           self.player = Player(copy(self.tilemap.object_datas["player_spawn"]["coord"]))
           
-          self.black_filter.fill([0,0,0,70])
+          self.black_filter.fill([0,0,0,80])
           
           surf = pygame.Surface([7 , 7] , SRCALPHA)
           pygame.draw.circle(surf , [143 , 65 , 234] , [4,4] , 3)
@@ -47,38 +51,58 @@ class Game(Scene):
           
           border = pygame.image.load("./assets/border_shadow.png").convert_alpha()
           
-          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.size.x , 12]) , [0 , self.camera.size.y - 10])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , -90) , [-2 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , 90) , [self.camera.size.x - 10 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.x , 12]) , 180) , [0 , -2])
-     
-     def update(self , clock):
-          dt = min(clock.tick(MAX_FPS) * 0.001 , 10)
-          self.game_timer += dt
-          # if game_ended:
-          #      if game_timer - gameover_timepoint <= 2:
-          #           slowness -= abs(0.6 - slowness) * 0.8
-          #           # dt *= slowness
-          #      elif game_timer - gameover_timepoint <= 3.5:
-          #           slowness += abs(1 - slowness) * 0.8
-          #           # dt *= slowness
-          #      else:
-          #           game_ended = False
+          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.size.x , 12]) , [0 , self.camera.size.y - 8])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , -90) , [-4 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , 90) , [self.camera.size.x - 8 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.x , 12]) , 180) , [0 , -4])
           
+          self.texts = {}
+          
+          s2font = Font("./assets/fonts/small_font.png" , [255 , 255 , 255])
+          s2font.zoom = 2
+          
+          fps_text = Text(s2font , "FPS : 0")
+          fps_text.pos = pygame.Vector2(6,6)
+          
+          levelmd_text = Text(s2font , "Level : " + self.level.name)
+          levelmd_text.pos = pygame.Vector2(self.screen.get_width() - 6 , 6)
+          levelmd_text.origin = pygame.Vector2(levelmd_text.size.x , 0)
+          
+          self.texts["fps"] = fps_text
+          self.texts["levelmd"] = levelmd_text
+          
+          book = pygame.image.load("./assets/objects/book.png").convert_alpha()
+          pos = pygame.Vector2(150 , 2)
+          self.images.append([book , pos])
+          
+          bc_text = Text(s2font , f": 0 / {self.level.n_book}")
+          bc_text.pos = pygame.Vector2(175,6)
+          
+          self.clock = pygame.time.Clock()
+          
+          self.texts["book_counter"] = bc_text
+     
+     def update(self , time_infos):
+          
+          dt = time_infos["dt"]
+          clock = time_infos["clock"]
+          max_fps = time_infos["max_fps"]
+          
+          self.game_timer += dt
           self.black_filter.fill([0,0,0,80])
-          self.camera.update(dt , MAX_FPS)
-          self.screen.fill([0,0,0])
-          self.particle_system.update(dt , max_fps=MAX_FPS)
+          self.camera.update(dt , max_fps)
+          self.screen.fill([17 , 9 , 13])
+          self.particle_system.update(dt , max_fps)
           
           #event loop
           for event in pygame.event.get():
                if event.type == QUIT:
                     pygame.quit()
                     sys.exit(0)
-               if not self.map_transition and not self.player.dead:
+               if not self.map_transition and not self.player.dead and not self.scene_manager.transition:
                     self.player.event_handler(event)
           
-          self.tilemap.update_platforms(dt , MAX_FPS)
+          self.tilemap.update_platforms(dt , max_fps)
           
           # Récupération de tout les colliders
           rects = []
@@ -97,7 +121,7 @@ class Game(Scene):
                camera_center = pygame.Vector2(self.player.map_pos[0]*8*44 , self.player.map_pos[1]*8*32)
                self.camera.pos = pygame.Vector2.lerp(self.camera.pos , camera_center , min(15*dt , 1))
           else:
-               self.player.update(dt , max_fps=MAX_FPS)
+               self.player.update(dt , max_fps)
                self.player.update_lights(self.game_timer)
                self.player.move(rects)
                self.player.update_after_moved()
@@ -127,11 +151,15 @@ class Game(Scene):
           else:
                self.room_pos = f"{self.player.map_pos[0]},{self.player.map_pos[1]}"
           
-          self.tilemap.update_books(dt , MAX_FPS)
+          self.tilemap.update_books(dt , max_fps)
           
           for book in self.tilemap.books:
-               if collide_rect(book.rect , self.player.rect):
-                    self.camera.shakevalues = pygame.Vector2(0 , 15)
+               if not book.caught:
+                    if collide_rect(book.rect , self.player.rect):
+                         book.is_caught()
+                         self.book_caught += 1
+               elif book.to_remove:
+                    self.tilemap.books.remove(book)
           
           for book in self.tilemap.books:
                book.display_light(self.black_filter , self.camera.pos)
@@ -151,9 +179,15 @@ class Game(Scene):
           self.camera.render_surf.blit(self.black_filter , [0,0])
           self.camera.render_surf.blit(self.bs_filter , [0,0])
           self.camera.display(self.screen , Rect([23,19],[704 , 512]))
-          self.screen.blit(self.font.render(str(int(clock.get_fps())) , True , [255 , 255 , 255]) , [0,0])
-          self.screen.blit(self.font.render(str(len(self.particle_system.particles)) , True , [255 , 255 , 255]) , [0,12])
-          pygame.display.flip()
+          
+          self.texts["fps"].set_string(f"FPS : {int(clock.get_fps())}")
+          self.texts["book_counter"].set_string(f": {self.book_caught} / {self.level.n_book}")
+          
+          for text in self.texts.values():
+               text.display(self.screen)
+          
+          for image in self.images:
+               self.screen.blit(image[0] , [image[1].x , image[1].y])
           
           
 if __name__ == "__main__":
