@@ -23,7 +23,7 @@ class Menu(Scene):
           def start_game():
                def change_scene():
                     self.scene_manager.set_scene("game")
-               self.scene_manager.transition = Transition(2 , 2 , change_scene)
+               self.scene_manager.transition = Transition(1 , 1 , change_scene)
           
           start_button_data = {
           "target":start_game,

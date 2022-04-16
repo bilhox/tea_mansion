@@ -5,6 +5,7 @@ from math import *
 from pygame.locals import *
 from scripts.form import *
 from scripts.particles import *
+from scripts.animation import *
 from random import *
 from copy import *
 
@@ -38,10 +39,11 @@ class Player():
           self.dead = False
           self.kinematic = False
           self.on_moving_platform = False
+          self.flip = False
           
-          self.texture = pygame.Surface([8 , 12])
-          self.texture.fill([123 , 45 , 234])
-          self.current_texture = self.texture
+          texture = pygame.Surface([20 , 12])
+          texture.fill([123 , 45 , 234])
+          self.current_texture = texture
           
           self.scale_offset = [0,0]
           
@@ -56,6 +58,14 @@ class Player():
           mult_surf = self.light.copy()
           mult_surf.fill([100 , 100 , 100])
           self.light.blit(mult_surf , (0 , 0), special_flags=BLEND_RGBA_MULT)
+          
+          self.anim_manager = AnimationManager("./assets/player/animations/")
+          self.current_anim = None
+     
+     def set_action(self , id):
+          
+          if self.current_anim == None or id != self.current_anim.data.id != id:
+               self.current_anim = self.anim_manager.get(id)     
      
      @property
      def rect(self):
@@ -82,9 +92,11 @@ class Player():
           self.velocity.y = min(self.velocity.y + self.n_gravity * dt * max_fps , 5)
           
           if(self.keys["left"]):
+               self.flip = True
                self.velocity.x = -min(abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)) , self.speed)
           elif(self.keys["right"]):
                self.velocity.x = min(abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)) , self.speed)
+               self.flip = False
           else:
                self.velocity.x *= 0.5
           
@@ -96,6 +108,15 @@ class Player():
           movement.y = min(movement.y , 2.5)
           self.current_movement = movement
           # print(self.rect.pos)
+          
+          if round(self.velocity.x , 1) != 0:
+               self.set_action("running")
+          else:
+               self.set_action("idle")
+          
+          if self.current_anim != None:
+               self.current_anim.play(dt)
+               self.current_texture = self.current_anim.get_current_img(self.flip)
      
      def update_after_moved(self):
           if (self.collision_side["bottom"]):
@@ -184,7 +205,9 @@ class Player():
           surface.blit(pygame.transform.scale(self.light , self.sl_size) , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
      
      def display(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
-          surface.blit(self.current_texture , [self.rect.pos.x - offset.x - self.scale_offset[0] , self.rect.pos.y - offset.y - self.scale_offset[1]])
+          text_size = self.current_texture.get_size()
+          text_offset = pygame.Vector2(self.rect.size.x / 2 - text_size[0] / 2 , self.rect.size.y - text_size[1])
+          surface.blit(self.current_texture , [self.rect.pos.x - offset.x - self.scale_offset[0] + text_offset.x , self.rect.pos.y - offset.y - self.scale_offset[1] + text_offset.y])
      
 
 class Book(Sprite):

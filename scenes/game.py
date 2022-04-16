@@ -167,7 +167,7 @@ class Game(Scene):
                self.player.display_light(self.black_filter , self.camera.pos)
           
           #Affichage de tout les éléments (tilemap layers , player , particles , camera_surf , texts ..)
-          self.tilemap.display_layer(self.camera.render_surf ,"background",chunk="0,0")
+          self.tilemap.display_layer(self.camera.render_surf ,"background",chunk=self.room_pos,offset=self.camera.pos)
           self.tilemap.display_layer(self.camera.render_surf ,"foreground",chunk=self.room_pos,offset=self.camera.pos)
           
           if not self.player.dead:

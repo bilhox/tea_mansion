@@ -15,7 +15,7 @@ class App():
      def __init__(self):
           pygame.init()
           self.screen = pygame.display.set_mode([750 , 550],SCALED+RESIZABLE)
-          pygame.display.set_caption("Tea Mansion - v0.7.2")
+          pygame.display.set_caption("Tea Mansion - v0.7.3")
           self.scene_manager = scene.Scene_Manager()
           self.scene_manager.scenes = {
                "game":game.Game(self.screen , self.scene_manager),
