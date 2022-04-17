@@ -6,6 +6,7 @@ from pygame.locals import *
 from scripts.form import *
 from scripts.particles import *
 from scripts.animation import *
+from scripts.unclassed_functions import *
 from random import *
 from copy import *
 
@@ -55,9 +56,7 @@ class Player():
           self.light = pygame.image.load("./assets/light.png").convert_alpha()
           self.light = pygame.transform.scale(self.light , [80 , 80])
           
-          mult_surf = self.light.copy()
-          mult_surf.fill([100 , 100 , 100])
-          self.light.blit(mult_surf , (0 , 0), special_flags=BLEND_RGBA_MULT)
+          self.light = mult_image(self.light , [100 , 100 , 100])
           
           self.anim_manager = AnimationManager("./assets/player/animations/")
           self.current_anim = None
@@ -109,14 +108,8 @@ class Player():
           self.current_movement = movement
           # print(self.rect.pos)
           
-          if round(self.velocity.x , 1) != 0:
-               self.set_action("running")
-          else:
-               self.set_action("idle")
-          
           if self.current_anim != None:
                self.current_anim.play(dt)
-               self.current_texture = self.current_anim.get_current_img(self.flip)
      
      def update_after_moved(self):
           if (self.collision_side["bottom"]):
@@ -126,6 +119,17 @@ class Player():
                self.velocity.y = 1
           if (self.collision_side["top"] and self.collision_side["bottom"] ):
                self.dead = True
+          
+          if self.velocity.y >= 0.0:
+               if not self.collision_side["right"] and not self.collision_side["left"] and round(self.velocity.x , 1) != 0:
+                    self.set_action("running")
+               elif round(self.velocity.x , 1) == 0:
+                    self.set_action("idle")
+               else:
+                    self.current_anim = None
+                    
+          if self.current_anim != None:
+               self.current_texture = self.current_anim.get_current_img(self.flip)
      
      def collision(self , rects):
           
@@ -241,16 +245,17 @@ class Book(Sprite):
           self.light = pygame.image.load("./assets/light.png").convert_alpha()
           self.light = pygame.transform.scale(self.light , [128 , 128])
           
-          mult_surf = self.light.copy()
-          mult_surf.fill([180 , 180 , 180])
-          self.light.blit(mult_surf , (0 , 0), special_flags=BLEND_RGBA_MULT)
-          
-          mult_surf = self.light.copy()
-          mult_surf.fill([randint(0 , 255), randint(0 , 255), randint(0 , 255)])
-          self.light.blit(mult_surf , (0 , 0) , special_flags=BLEND_RGBA_MULT)
+          self.light = mult_image(self.light , [180]*3)
+          self.light = mult_image(self.light , [randint(0 , 255), randint(0 , 255), randint(0 , 255)])
+          # self.light = mult_image(self.light , [10]*3)
           
           self.caught = False
           self.to_remove = False
+          # light alpha
+          self.scale_coef = 1
+          self.la = 0
+          self.remove_timer = 0
+          self.remove_duration = 1
           
      def is_caught(self):
           self.caught = True
@@ -276,13 +281,21 @@ class Book(Sprite):
                     self.anim_timer = 0
                     self.anim_offset.y += (1 if self.anim_dir else -1)
           else:
-               if len(self.part_system.particles) == 0:
+               self.remove_timer += dt
+               self.scale_coef -= (1/self.remove_duration) * dt
+               if self.remove_duration - self.remove_timer <= 0:
                     self.to_remove = True
+                    self.remove_timer = 0
      
      def display_light(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.light.get_size())
-          light_offset = offset + self.anim_offset - (self.rect.size / 2 - light_size / 2)
-          surface.blit(self.light , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
+          if self.caught:
+               light_size = pygame.Vector2([self.light.get_width()*self.scale_coef , self.light.get_height()*self.scale_coef])
+               light_offset = offset + self.anim_offset - (self.rect.size / 2 - light_size / 2)
+               surface.blit(pygame.transform.scale(self.light , light_size) , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
+          else:
+               light_offset = offset + self.anim_offset - (self.rect.size / 2 - light_size / 2)
+               surface.blit(self.light , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
      
      def display(self , surface : pygame.Surface , offset):
           surf_size = pygame.Vector2(self.surface.get_size())

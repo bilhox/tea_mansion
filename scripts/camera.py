@@ -25,26 +25,6 @@ class Camera():
      
      def display(self , screen , display_rect : Rect):
           screen.blit(pygame.transform.scale(self.render_surf , display_rect.size) , [display_rect.x , display_rect.y])
-     
-     # def display(self , screen , *drawables):
-          
-     #      self.render_surf.fill([0,0,0])
-     #      int_rect = self.rect.int_rect()
-          
-     #      if (self.render_surf.get_width() != self.rect.size.x or self.render_surf.get_height() != self.rect.size.y):
-     #           self.render_surf = pygame.Surface(self.rect.size)
-          
-     #      for drawable in drawables:
-     #           if isinstance(drawable , scripts.entity.Player):
-     #                if collide_rect(drawable.rect , self.rect):
-     #                     drawable.display(self.render_surf , [self.pos.x , self.pos.y])
-     #           elif isinstance(drawable , scripts.map.TileMap):
-     #                drawable.display(self.render_surf , int_rect , self.pos)
-     #           elif isinstance(drawable , FloatRect):
-     #                if collide_rect(drawable , self.rect):
-     #                     drawable.draw(self.render_surf , self.pos)
-          
-     #      screen.blit(pygame.transform.scale(self.render_surf , screen.get_size()) , [0,0])
 
 class Transition_data:
      
