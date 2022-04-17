@@ -49,8 +49,9 @@ class Menu(Scene):
                if event.type == QUIT:
                     pygame.quit()
                     sys.exit(0)
-                    
-               self.start_button.update(event)
+
+               if not self.scene_manager.transition:    
+                    self.start_button.update(event)
           
           self.text.display(self.screen)
           self.start_button.display(self.screen)

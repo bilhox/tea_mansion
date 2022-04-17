@@ -29,12 +29,13 @@ class Player():
      
      def __init__(self , pos):
           self.collider = Collider(FloatRect(pos , pygame.Vector2(8,12)) , "block")
-          self.keys = {"left":False , "right":False , "up":False , "down":False}
+          self.keys = {"left":False , "right":False , "dash":False}
+          self.dash_direction = "RIGHT"
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
-          self.n_gravity = 0.125
+          self.n_gravity = 0.1
           self.velocity = pygame.Vector2(0,0)
-          self.speed = 1.2 
-          self.jump_amount = 3.25
+          self.speed = 1
+          self.jump_amount = 2.8
           self.air_time = 0
           self.current_movement = pygame.Vector2(0,0)
           self.dead = False
@@ -45,8 +46,6 @@ class Player():
           texture = pygame.Surface([20 , 12])
           texture.fill([123 , 45 , 234])
           self.current_texture = texture
-          
-          self.scale_offset = [0,0]
           
           self.chunk_pos = [int(self.rect.x // 32) , int(self.rect.y // 32)]
           self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
@@ -60,6 +59,11 @@ class Player():
           
           self.anim_manager = AnimationManager("./assets/player/animations/")
           self.current_anim = None
+          
+          self.dash_timer = 0
+          self.dash_duration = 0.2
+          
+          self.img_scale = pygame.Vector2(1,1)
      
      def set_action(self , id):
           
@@ -86,26 +90,47 @@ class Player():
                self.collider.set_on_moving_platform(False)
           except:
                pass
-          
           self.air_time += 1
-          self.velocity.y = min(self.velocity.y + self.n_gravity * dt * max_fps , 5)
-          
-          if(self.keys["left"]):
-               self.flip = True
-               self.velocity.x = -min(abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)) , self.speed)
-          elif(self.keys["right"]):
-               self.velocity.x = min(abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)) , self.speed)
-               self.flip = False
+          if not self.keys["dash"]:
+               self.velocity.y = min(self.velocity.y + self.n_gravity * dt * max_fps , 5)
           else:
-               self.velocity.x *= 0.5
+               self.velocity.y = 0
+
+          if not self.keys["dash"]:
+               if(self.keys["left"]):
+                    self.dash_direction = "LEFT"
+                    self.velocity.x = -(abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)))
+               elif(self.keys["right"]):
+                    self.dash_direction = "RIGHT"
+                    self.velocity.x = (abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)))
+               else:
+                    self.velocity.x *= 0.5
+          elif self.keys["dash"]:
+               self.dash_timer += dt
+               if self.dash_direction == "LEFT":
+                    self.velocity.x = min((-5 * ((self.dash_duration - self.dash_timer)/self.dash_duration)) , 0)
+               elif self.dash_direction == "RIGHT":
+                    self.velocity.x = max((5 * ((self.dash_duration - self.dash_timer)/self.dash_duration)) , 0)
+               elif self.dash_direction == "UP":
+                    self.velocity.y = min((-5 * ((self.dash_duration - self.dash_timer)/self.dash_duration)) , 0)
+               if self.dash_duration - self.dash_timer <= 0:
+                    self.keys["dash"] = False
+                    self.dash_timer = 0
+                    
+          if self.velocity.y < 0:
+               self.dash_direction = "UP"
           
-          movement = copy(self.velocity)
+          if self.velocity.x < 0:
+               self.flip = True
+          elif self.velocity.x > 0:
+               self.flip = False
           
+          movement = copy(self.velocity) * dt * max_fps
+          movement.x = max(min(movement.x , 7),-7)
+          movement.y = max(min(movement.y , 1.4),-7)
           
-          movement *= dt * max_fps
-          movement.x = max(min(movement.x , 3),-3)
-          movement.y = min(movement.y , 2.5)
           self.current_movement = movement
+          # print(self.current_movement)
           # print(self.rect.pos)
           
           if self.current_anim != None:
@@ -121,7 +146,7 @@ class Player():
                self.dead = True
           
           if self.velocity.y >= 0.0:
-               if not self.collision_side["right"] and not self.collision_side["left"] and round(self.velocity.x , 1) != 0:
+               if not self.collision_side["right"] and not self.collision_side["left"] and (-0.5 >= round(self.velocity.x , 1) or round(self.velocity.x , 1) >= 0.5):
                     self.set_action("running")
                elif round(self.velocity.x , 1) == 0:
                     self.set_action("idle")
@@ -150,12 +175,10 @@ class Player():
                     if (collider.type == "block"):
                          if (self.current_movement.x < 0):
                               self.rect.pos.x = collider.rect.x + collider.rect.size.x
+                              collision_side["left"] = True
                          elif (self.current_movement.x > 0):
                               self.rect.x = collider.rect.pos.x - self.rect.size.x
-                         if (collider.rect.x <= self.rect.x):
                               collision_side["right"] = True
-                         else:
-                              collision_side["left"] = True
                     elif (collider.type == "trap"):
                          self.dead = True
           
@@ -167,13 +190,11 @@ class Player():
                     if (collider.type == "block"):
                          if (self.current_movement.y < 0):
                               self.rect.pos.y = collider.rect.y + collider.rect.size.y
+                              collision_side["top"] = True
                          elif (self.current_movement.y > 0):
                               if not self.collider.on_moving_platform and collider.move_above:
                                    self.collider.set_on_moving_platform(True , collider)
                               self.rect.pos.y = collider.rect.y - self.rect.size.y
-                         if (collider.rect.y <= self.rect.y):
-                              collision_side["top"] = True
-                         else:
                               collision_side["bottom"] = True
                     elif (collider.type == "platform"):
                          if (floor(self.rect.bottom - self.current_movement.y) <= collider.rect.y and self.current_movement.y > 0):
@@ -194,7 +215,7 @@ class Player():
                     self.keys["right"] = True
                if event.key == K_q:
                     self.keys["left"] = True
-               if event.key == K_s:
+               if event.key == K_z:
                     if (self.air_time <= 4):
                          self.velocity.y = -(self.jump_amount)
           elif event.type == KEYUP:
@@ -202,16 +223,19 @@ class Player():
                     self.keys["right"] = False
                if event.key == K_q:
                     self.keys["left"] = False
+               if event.key == K_s:
+                    self.keys["dash"] = True
                     
      def display_light(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.sl_size)
-          light_offset = offset - self.scale_offset - (self.rect.size / 2 - light_size / 2)
+          light_offset = offset - (self.rect.size / 2 - light_size / 2)
           surface.blit(pygame.transform.scale(self.light , self.sl_size) , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
      
      def display(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
-          text_size = self.current_texture.get_size()
-          text_offset = pygame.Vector2(self.rect.size.x / 2 - text_size[0] / 2 , self.rect.size.y - text_size[1])
-          surface.blit(self.current_texture , [self.rect.pos.x - offset.x - self.scale_offset[0] + text_offset.x , self.rect.pos.y - offset.y - self.scale_offset[1] + text_offset.y])
+          final_texture = pygame.transform.scale(self.current_texture , [self.current_texture.get_width() * self.img_scale.x , self.current_texture.get_height() * self.img_scale.y])
+          text_size = final_texture.get_size()
+          text_offset = self.rect.pos - offset + pygame.Vector2(self.rect.size.x / 2 - text_size[0] / 2 , self.rect.size.y - text_size[1])
+          surface.blit(final_texture , text_offset)
      
 
 class Book(Sprite):
