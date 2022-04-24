@@ -106,9 +106,9 @@ class Text():
     def size(self):
         return pygame.Vector2(self.surface.get_size())
     
-    def display(self , surface , scale=[0,0]):
+    def display(self , surface , offset=pygame.Vector2(0,0) , scale=[0,0]):
         
         if scale == [0,0]:
-            surface.blit(self.surface , [self.pos.x - self.origin.x , self.pos.y - self.origin.y])
+            surface.blit(self.surface , [self.pos.x - self.origin.x - offset.x , self.pos.y - self.origin.y - offset.y])
         else:
-            surface.blit(pygame.transform.scale(self.surface , scale) , [self.pos.x - self.origin.x*(scale[0]/self.size.x) , self.pos.y - self.origin.y*(scale[1]/self.size.y)])
+            surface.blit(pygame.transform.scale(self.surface , scale) , [self.pos.x - self.origin.x*(scale[0]/self.size.x) - offset.x , self.pos.y - self.origin.y*(scale[1]/self.size.y)  - offset.y])

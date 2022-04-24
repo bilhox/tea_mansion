@@ -35,7 +35,7 @@ class Game(Scene):
      def start(self):
           
           pygame.mouse.set_visible(False)
-          self.player = Player(copy(self.tilemap.object_datas["player_spawn"]["coord"]))
+          self.player = Player(copy(self.tilemap.objects["player_spawn"]["coord"]))
           
           self.black_filter.fill([0,0,0,80])
           
@@ -82,6 +82,32 @@ class Game(Scene):
           
           self.texts["book_counter"] = bc_text
      
+     def events(self):
+          
+          for event in pygame.event.get():
+               if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+               if not self.map_transition and not self.player.dead and not self.scene_manager.transition:
+                    if event.type == KEYDOWN:
+                         if event.key == K_d:
+                              self.player.keys["right"] = True
+                         if event.key == K_q:
+                              self.player.keys["left"] = True
+                         if event.key == K_z:
+                              if (self.player.air_time <= 4):
+                                   self.player.velocity.y = -(self.player.jump_amount)
+                    elif event.type == KEYUP:
+                         if event.key == K_d:
+                              self.player.keys["right"] = False
+                         if event.key == K_q:
+                              self.player.keys["left"] = False
+                         if event.key == K_s:
+                              if not self.player.dashing:
+                                   self.player.dashing = True
+                                   self.player.velocity.y = 0
+               
+     
      def update(self , time_infos):
           
           dt = time_infos["dt"]
@@ -95,12 +121,7 @@ class Game(Scene):
           self.particle_system.update(dt , max_fps)
           
           #event loop
-          for event in pygame.event.get():
-               if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit(0)
-               if not self.map_transition and not self.player.dead and not self.scene_manager.transition:
-                    self.player.event_handler(event)
+          self.events()
           
           self.tilemap.update_platforms(dt , max_fps)
           
@@ -143,7 +164,7 @@ class Game(Scene):
                self.player.kinematic = True
                if (.6 - self.death_timer) <= 0:
                     self.death_timer = 0
-                    self.player.rect.pos = copy(self.tilemap.object_datas["player_spawn"]["coord"])
+                    self.player.rect.pos = copy(self.tilemap.objects["player_spawn"]["coord"])
                     self.player.kinematic = False
                     self.player.dead = False
                     self.player.reset_keys()
@@ -157,19 +178,30 @@ class Game(Scene):
                if not book.caught:
                     if collide_rect(book.rect , self.player.rect):
                          book.is_caught()
-                         self.book_caught += 1
+                         self.player.books += 1
                elif book.to_remove:
                     self.tilemap.books.remove(book)
           
           for book in self.tilemap.books:
                book.display_light(self.black_filter , self.camera.pos)
+          for torch in self.tilemap.deco_objects:
+               torch.display_light(self.black_filter , self.camera.pos)
+               torch.update(dt , max_fps)
+          
+          self.level.bookshelf.update(self.player , dt , max_fps)    
+                
           if not self.player.dead:
                self.player.display_light(self.black_filter , self.camera.pos)
           
           #Affichage de tout les éléments (tilemap layers , player , particles , camera_surf , texts ..)
           self.tilemap.display_layer(self.camera.render_surf ,"background",chunk=self.room_pos,offset=self.camera.pos)
+          self.tilemap.display_layer(self.camera.render_surf ,"background objects",chunk=self.room_pos,offset=self.camera.pos)
+          for torch in self.tilemap.deco_objects:
+               torch.display(self.camera.render_surf , self.camera.pos)
+          
           self.tilemap.display_layer(self.camera.render_surf ,"foreground",chunk=self.room_pos,offset=self.camera.pos)
           
+          self.level.bookshelf.display(self.camera.render_surf , self.camera.pos)
           if not self.player.dead:
                self.player.display(self.camera.render_surf , self.camera.pos)
           self.tilemap.display_layer(self.camera.render_surf ,"platforms",chunk=self.room_pos,offset=self.camera.pos)

@@ -4,11 +4,14 @@ import json
 
 from xml.etree.ElementTree import *
 from pygame.locals import *
-from scripts.entity import Book
+from scripts.entity import Book, Bookshelf
+from scripts.particles import *
 from scripts.form import *
 from scripts.camera import *
 from math import *
 from copy import *
+from random import *
+from scripts.unclassed_functions import *
 
 def load_tileset(tsx_path):
      parsed = parse(tsx_path)
@@ -29,6 +32,7 @@ def load_tileset(tsx_path):
                i+=1
      
      colliders = {}
+     decoration = {}
      
      for special_tile in root.findall("tile"):
           try:
@@ -38,10 +42,13 @@ def load_tileset(tsx_path):
                if (tile_type == "collider"):
                     collider_type = special_tile.find("properties").find("property").get("value")
                     colliders[int(tile_id)] = collider_type
+               elif (tile_type == "decoration"):
+                    deco_type = special_tile.find("properties").find("property").get("value")
+                    decoration[int(tile_id)] = deco_type
           except:
                pass
      
-     return tiles , colliders , tile_size[0]
+     return tiles , colliders , decoration , tile_size[0]
 
 class TileMap():
      
@@ -52,7 +59,8 @@ class TileMap():
           self.size = [0,0]
           self.collider_chunks = {}
           self.layers = {}
-          self.object_datas = {}
+          self.objects = {}
+          self.deco_objects = []
           self.platforms = []
           self.chunk_size = chunk_size
           self.tilesize = 0
@@ -60,12 +68,13 @@ class TileMap():
           
      def load_map(self , map_path):
           root = parse(map_path).getroot()
-          self.tileset , self.collider_types , self.tilesize = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
+          self.tileset , self.collider_types , self.deco_types , self.tilesize = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
           self.size[0] = int(root.get("width"))
           self.size[1] = int(root.get("height"))
           
           layer_datas = {}
           
+          # preparing the layers , by putting all values in a layer ,  into a 2D array
           for layer in root.findall("layer"):
                data = layer.find("data").text
                data = data.strip("\n").splitlines()
@@ -77,6 +86,9 @@ class TileMap():
                
                layer_datas[layer.get("name")] = t_tab
           
+          # Starting with the object layer
+          # it store some main coordinates like player start position
+          # it's also for moving platforms and books
           object_group = root.find("objectgroup")
           for obj in object_group.findall("object"):
                if obj.get("type") == "moving_platform":
@@ -125,10 +137,12 @@ class TileMap():
                     name = obj.get("name")
                     data['type'] = obj.get("type")
                     data["coord"] = pygame.Vector2(float(obj.get("x")) , float(obj.get("y")))
-                    self.object_datas[name] = data
+                    self.objects[name] = data
           
+          # iteration through layers
           for key in layer_datas:
                t_tab = layer_datas[key]
+               # specific process with the layer for colliders
                if key == "colliders":
                     for cy in range(0 , self.size[1] // 4):
                          for cx in range(0 , self.size[0] // 4):
@@ -141,7 +155,7 @@ class TileMap():
                                              size = pygame.Vector2(self.tilesize,self.tilesize)
                                              rect = FloatRect(pygame.Vector2(x*self.tilesize , y*self.tilesize) , size)
                                              collider = Collider(rect , self.collider_types[int(t_tab[y][x])-1])
-                                             c_chunk.append(collider)
+                                             c_chunk.append(collider)   
                               if c_chunk != []:
                                    self.collider_chunks[pos] = c_chunk
                else:
@@ -155,7 +169,11 @@ class TileMap():
                                    px = 0
                                    for x in range(cx*self.chunk_size[0] , (cx+1)*self.chunk_size[0]):
                                         if (t_tab[y][x] != "0"):
-                                             chunk_surf.blit(self.tileset[int(t_tab[y][x])-1] , [px*self.tilesize , py*self.tilesize])
+                                             if not int(t_tab[y][x])-1 in self.deco_types.keys():
+                                                  chunk_surf.blit(self.tileset[int(t_tab[y][x])-1] , [px*self.tilesize , py*self.tilesize])
+                                             elif (self.deco_types[int(t_tab[y][x])-1] == "torch"):
+                                                  self.deco_objects.append(Torch(pygame.Vector2([(cx*self.chunk_size[0]+px)*self.tilesize ,(cy*self.chunk_size[1]+py)*self.tilesize]) , self.tileset[int(t_tab[y][x])-1]))
+                                   
                                         px += 1
                                    py += 1
                               layer_data[pos] = chunk_surf  
@@ -287,3 +305,53 @@ class Level:
           
           self.name = data["name"]
           self.n_book = data["book_number"]
+          
+          self.bookshelf = Bookshelf(self.tilemap.objects["bookshelf"]["coord"])
+
+class Torch:
+     
+     def __init__(self , pos , texture):
+          self.pos = pos
+          self.texture = texture
+          
+          self.light = pygame.image.load("./assets/light.png").convert_alpha()
+          self.light = pygame.transform.scale(self.light , [128 , 128])
+          
+          self.light = mult_image(self.light , [90 , 50 , 50])
+          
+          
+          self.particle_data = Particle_data()
+          self.particle_data.set_intervall("pos" , self.pos+pygame.Vector2(4 , 2) , self.pos+pygame.Vector2(4 , 2))
+          self.particle_data.set_intervall("angle" , 0 , 360)
+          self.particle_data.set_intervall("speed" , 1 , 3)
+          self.particle_data.set_intervall("life_time" , 0.8 , 1)
+          self.particle_data.speed_multiplicator = 0.94
+          
+          p_surfaces = []
+          colors = [[207 , 87 , 60],[167 , 48 , 48],[222 , 158 , 65]]
+          
+          for i in range(2):
+               surf = pygame.Surface([1,1])
+               surf.fill(colors[i])
+               p_surfaces.append(surf)
+          
+          self.particle_data.particle_surfaces = p_surfaces
+          
+          self.part_sys = Particle_system()
+          self.part_timer = 0
+     
+     def update(self , dt , max_fps=60):
+          self.part_timer += dt
+          self.part_sys.update(dt , max_fps)
+          if 0.1 - self.part_timer <= 0:
+               self.part_timer = 0
+               self.part_sys.spawnparticles(1 , self.particle_data)
+     
+     def display_light(self , surface , offset=pygame.Vector2(0,0)):
+          light_size = pygame.Vector2(self.light.get_size())
+          light_offset = offset - (pygame.Vector2(4,4) - light_size / 2)
+          surface.blit(self.light , [self.pos.x - light_offset.x , self.pos.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
+     
+     def display(self , surface , offset=pygame.Vector2(0,0)):
+          surface.blit(self.texture , [self.pos.x - offset.x , self.pos.y - offset.y])
+          self.part_sys.display(surface , offset)

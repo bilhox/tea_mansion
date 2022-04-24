@@ -7,6 +7,7 @@ from scripts.form import *
 from scripts.camera import *
 
 async def main():
+     pygame.init()
      screen = pygame.display.set_mode([500 , 500])
 
      fR = FloatRect(pygame.Vector2(0 , 0) , pygame.Vector2(50 , 50))
@@ -21,12 +22,16 @@ async def main():
      rect_keys = {"left":False , "right":False , "up":False , "down":False , "rotate":False}
      fR.color = [100 , 0 , 0]
      fR2.color = [200 , 34 , 120]	
+     
+     font = pygame.font.Font(None , 20)
 
+     clock = pygame.time.Clock()
+     
      while True:
           
-
+          dt = clock.tick(200) * 0.001
           camera.erase_surf([0,0,0])
-          camera.update()
+          camera.update(dt)
           for event in pygame.event.get():
                if (event.type == QUIT):
                     pygame.quit()
@@ -95,7 +100,8 @@ async def main():
           await diag_collision(fR , fR2)
           fR.draw(camera.render_surf , camera.pos)
           fR2.draw(camera.render_surf , camera.pos)
-          camera.display(screen)
+          camera.display(screen , screen.get_clip())
+          screen.blit(font.render(f"FPS : {int(clock.get_fps())}" , True , [255 , 0 , 0]) , [0,0])
           pygame.display.flip()
 
 if __name__ == "__main__":

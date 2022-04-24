@@ -6,6 +6,7 @@ from pygame.locals import *
 from scripts.form import *
 from scripts.particles import *
 from scripts.animation import *
+from scripts.text import Font, Text
 from scripts.unclassed_functions import *
 from random import *
 from copy import *
@@ -29,19 +30,20 @@ class Player():
      
      def __init__(self , pos):
           self.collider = Collider(FloatRect(pos , pygame.Vector2(8,12)) , "block")
-          self.keys = {"left":False , "right":False , "dash":False}
+          self.keys = {"left":False , "right":False}
           self.dash_direction = "RIGHT"
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
-          self.n_gravity = 0.1
+          self.n_gravity = 0.08
           self.velocity = pygame.Vector2(0,0)
           self.speed = 1
-          self.jump_amount = 2.8
+          self.jump_amount = 2.7
           self.air_time = 0
           self.current_movement = pygame.Vector2(0,0)
           self.dead = False
           self.kinematic = False
           self.on_moving_platform = False
           self.flip = False
+          self.dashing  = False
           
           texture = pygame.Surface([20 , 12])
           texture.fill([123 , 45 , 234])
@@ -57,18 +59,28 @@ class Player():
           
           self.light = mult_image(self.light , [100 , 100 , 100])
           
+          #animation variables
           self.anim_manager = AnimationManager("./assets/player/animations/")
           self.current_anim = None
           
-          self.dash_timer = 0
-          self.dash_duration = 0.2
+          self.timers = {}
+          
+          # Dash variables
+          self.dash_amount = 100
+          self.distance_traveled = 0
+          self.dash_speed = 10
           
           self.img_scale = pygame.Vector2(1,1)
+          
+          self.books = 0
      
      def set_action(self , id):
           
           if self.current_anim == None or id != self.current_anim.data.id != id:
                self.current_anim = self.anim_manager.get(id)     
+     
+     def add_powertimer(self , name , duration):
+          self.timers[name] = {"timer":0 , "duration":duration}
      
      @property
      def rect(self):
@@ -86,17 +98,21 @@ class Player():
           self.chunk_pos = [int(self.rect.x // 32) , int(self.rect.y // 32)]
           self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
           
+          #update all timers
+          for timer in self.timers.values():
+               timer["timer"] += dt
+          
+          # if the player is on a platform , update the player position
           try:
                self.collider.set_on_moving_platform(False)
           except:
                pass
+          
+          # gravity
           self.air_time += 1
-          if not self.keys["dash"]:
+          if not self.dashing:
                self.velocity.y = min(self.velocity.y + self.n_gravity * dt * max_fps , 5)
-          else:
-               self.velocity.y = 0
-
-          if not self.keys["dash"]:
+               # basic movements
                if(self.keys["left"]):
                     self.dash_direction = "LEFT"
                     self.velocity.x = -(abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)))
@@ -105,17 +121,42 @@ class Player():
                     self.velocity.x = (abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)))
                else:
                     self.velocity.x *= 0.5
-          elif self.keys["dash"]:
-               self.dash_timer += dt
+          else:
+               distance_remaining = self.dash_amount - self.distance_traveled
+               distance_remaining_at_mid = max(self.distance_traveled - self.dash_amount / 2 , 0)
+               # print(self.img_scale)
+               # dashing scale effect code
+               if self.dash_amount / 2 - self.distance_traveled >= 0:
+                    if not self.dash_direction == "UP":
+                         self.img_scale.x = 1 + 2 * min(self.distance_traveled / (self.dash_amount / 2), 1)
+                         self.img_scale.y = 1 - 0.9 * min(self.distance_traveled / (self.dash_amount / 2), 1)
+                    else:
+                         self.img_scale.x = 1 - 0.9 * min(self.distance_traveled / (self.dash_amount / 2), 1)
+                         self.img_scale.y = 1 + 2 * min(self.distance_traveled / (self.dash_amount / 2), 1)
+               else:
+                    if not self.dash_direction == "UP":
+                         self.img_scale.x = 3 - 2 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
+                         self.img_scale.y = 0.1 + 0.9 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
+                    else:
+                         self.img_scale.x = 0.1 + 0.9 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
+                         self.img_scale.y = 3 - 2 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
+               
+               # dashing movement
                if self.dash_direction == "LEFT":
-                    self.velocity.x = min((-5 * ((self.dash_duration - self.dash_timer)/self.dash_duration)) , 0)
+                    self.velocity.x = -self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05)  * dt * max_fps
                elif self.dash_direction == "RIGHT":
-                    self.velocity.x = max((5 * ((self.dash_duration - self.dash_timer)/self.dash_duration)) , 0)
+                    self.velocity.x = self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05) * dt * max_fps
                elif self.dash_direction == "UP":
-                    self.velocity.y = min((-5 * ((self.dash_duration - self.dash_timer)/self.dash_duration)) , 0)
-               if self.dash_duration - self.dash_timer <= 0:
-                    self.keys["dash"] = False
-                    self.dash_timer = 0
+                    self.velocity.y = -self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05) * dt * max_fps
+               
+               self.distance_traveled += max(min(self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05) * dt**2 * max_fps**2 , 7) , -7)
+               
+               if self.distance_traveled - self.dash_amount >= 0:
+                    self.img_scale.x = self.img_scale.y = 1
+                    self.slow_mode = True
+                    self.dashing = False
+                    self.distance_traveled = 0
+                    self.velocity = pygame.Vector2(0,0)
                     
           if self.velocity.y < 0:
                self.dash_direction = "UP"
@@ -125,13 +166,12 @@ class Player():
           elif self.velocity.x > 0:
                self.flip = False
           
-          movement = copy(self.velocity) * dt * max_fps
+          movement = copy(self.velocity)
+          movement *= dt * max_fps
           movement.x = max(min(movement.x , 7),-7)
-          movement.y = max(min(movement.y , 1.4),-7)
+          movement.y = max(min(movement.y , 2.5),-7)
           
           self.current_movement = movement
-          # print(self.current_movement)
-          # print(self.rect.pos)
           
           if self.current_anim != None:
                self.current_anim.play(dt)
@@ -207,24 +247,6 @@ class Player():
           
           
           self.collision_side = collision_side
-          
-     def event_handler(self , event):
-          
-          if event.type == KEYDOWN:
-               if event.key == K_d:
-                    self.keys["right"] = True
-               if event.key == K_q:
-                    self.keys["left"] = True
-               if event.key == K_z:
-                    if (self.air_time <= 4):
-                         self.velocity.y = -(self.jump_amount)
-          elif event.type == KEYUP:
-               if event.key == K_d:
-                    self.keys["right"] = False
-               if event.key == K_q:
-                    self.keys["left"] = False
-               if event.key == K_s:
-                    self.keys["dash"] = True
                     
      def display_light(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.sl_size)
@@ -234,7 +256,7 @@ class Player():
      def display(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           final_texture = pygame.transform.scale(self.current_texture , [self.current_texture.get_width() * self.img_scale.x , self.current_texture.get_height() * self.img_scale.y])
           text_size = final_texture.get_size()
-          text_offset = self.rect.pos - offset + pygame.Vector2(self.rect.size.x / 2 - text_size[0] / 2 , self.rect.size.y - text_size[1])
+          text_offset = self.rect.pos - offset + pygame.Vector2(self.rect.size.x / 2 - text_size[0] / 2 , self.rect.size.y - text_size[1] if text_size[1] > self.rect.size.y else self.rect.size.y / 2 - text_size[1] / 2)
           surface.blit(final_texture , text_offset)
      
 
@@ -327,3 +349,54 @@ class Book(Sprite):
           self.part_system.display(surface ,offset-self.rect.size / 2)
           if not self.caught:
                super().display(surface , text_offset)
+
+
+class Bookshelf(Sprite):
+     
+     def __init__(self , pos):
+          super().__init__(pos , pygame.Vector2(32 , 48))
+          self.texture = pygame.image.load("./assets/objects/bookshelf.png").convert_alpha()
+          self.shadow = self.texture.copy()
+          self.shadow.fill([0,0,0,128] , special_flags=BLEND_RGBA_MULT)
+          
+          self.shadow_scale = [1 , 1]
+          self.is_colliding = False
+          self.scale_timer = 0
+          
+          self.n_books = 0
+          self.books_needed = 5
+          
+          font = Font("./assets/fonts/small_font.png" , [255 , 255 , 255])
+          
+          self.book_text = Text(font , f"0 / {self.books_needed}")
+          self.book_text.pos = self.rect.pos + pygame.Vector2(self.rect.size.x / 2 - self.book_text.size.x / 2 , -self.book_text.size.y - 10)
+     
+     def update(self , player : Player , dt , max_fps=60):
+          if collide_rect(self.rect , player.rect):
+               self.is_colliding = True
+               self.n_books += player.books
+               player.books = 0
+               self.book_text.set_string(f"{self.n_books} / {self.books_needed}")
+               self.book_text.pos = self.rect.pos + pygame.Vector2(self.rect.size.x / 2 - self.book_text.size.x / 2 , -self.book_text.size.y - 10)
+     
+          else:
+               self.is_colliding = False
+               
+          if self.is_colliding:
+               if self.scale_timer <= 1:
+                    self.scale_timer += dt
+                    self.shadow_scale = [1 + 0.4 * (self.scale_timer / 1)]*2       
+          else:
+               if self.scale_timer >= 0:
+                    self.scale_timer -= dt
+                    self.shadow_scale = [1 + 0.4 * (self.scale_timer / 1)]*2  
+     
+          
+     
+     def display(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
+          shadow = pygame.transform.scale(self.shadow , [self.shadow.get_width() * self.shadow_scale[0] , self.shadow.get_height() * self.shadow_scale[1]])
+          shadow_offset = self.rect.size / 2 - pygame.Vector2(shadow.get_size()) / 2
+          
+          surface.blit(shadow , [self.rect.x - offset.x + shadow_offset.x , self.rect.y - offset.y + shadow_offset.y])
+          self.book_text.display(surface , offset=offset)
+          surface.blit(self.texture , [self.rect.x - offset.x , self.rect.y - offset.y])

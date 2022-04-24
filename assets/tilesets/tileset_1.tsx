@@ -16,4 +16,9 @@
    <property name="collider_type" value="trap"/>
   </properties>
  </tile>
+ <tile id="311" type="decoration">
+  <properties>
+   <property name="deco_type" value="torch"/>
+  </properties>
+ </tile>
 </tileset>
