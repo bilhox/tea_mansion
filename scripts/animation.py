@@ -12,7 +12,9 @@ class Animation_Data():
           config_parser = parse(path+"/config.xml")
           self.duration = 0
           self.images = []
+          self.infinite = bool(config_parser.getroot().get("infinite"))
           self.speed = float(config_parser.getroot().get("speed"))
+          
           
           img_frames = [int(frame) for frame in config_parser.getroot().get("frames").split(",")]
           img_list = []
@@ -40,14 +42,17 @@ class Animation:
           self.data = anim_data
           self.frame = 0
           self.pause = False
+          self.finished = False
           self.calc_image()
      
-     def play(self , dt):
-          if not self.pause:
-               self.frame += dt * 60 * self.data.speed
-          if self.frame > self.data.duration:
-               self.frame = 0 
-          self.calc_image()
+     def play(self , dt , max_fps=60):
+          if not self.finished:
+               if not self.pause:
+                    self.frame += dt * max_fps * self.data.speed
+               if self.frame > self.data.duration:
+                    self.frame = 0 
+                    self.finished = True if self.data.infinite else False
+               self.calc_image()
      
      def calc_image(self):
           

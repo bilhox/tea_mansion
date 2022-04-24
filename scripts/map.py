@@ -35,18 +35,18 @@ def load_tileset(tsx_path):
      decoration = {}
      
      for special_tile in root.findall("tile"):
-          try:
-               tile_id = special_tile.get("id")
-               tile_type = special_tile.get("type")
-               
-               if (tile_type == "collider"):
-                    collider_type = special_tile.find("properties").find("property").get("value")
-                    colliders[int(tile_id)] = collider_type
-               elif (tile_type == "decoration"):
-                    deco_type = special_tile.find("properties").find("property").get("value")
-                    decoration[int(tile_id)] = deco_type
-          except:
-               pass
+          tile_id = special_tile.get("id")
+          tile_type = special_tile.get("type")
+          
+          properties = {}
+          
+          for property in special_tile.find("properties").findall("property"):
+               properties[property.get("name")] = property.get("value")
+          
+          if (tile_type == "collider"):
+               colliders[int(tile_id)] = properties
+          elif (tile_type == "decoration"):
+               decoration[int(tile_id)] = properties
      
      return tiles , colliders , decoration , tile_size[0]
 
@@ -65,6 +65,27 @@ class TileMap():
           self.chunk_size = chunk_size
           self.tilesize = 0
           self.books = []
+          
+     def get_collider_by_data(self , key , pos):
+          
+          properties = self.collider_types[key]
+          
+          rect = FloatRect(pos , pygame.Vector2(8,8))
+          
+          if properties["collider_type"] == "trap":
+               if properties["orientation"] == "top":
+                    rect.size = pygame.Vector2(8 , 4)
+                    rect.pos.y += 4
+               elif properties["orientation"] == "down":
+                    rect.size = pygame.Vector2(8 , 4)
+                    rect.pos.y -= 4
+               elif properties["orientation"] == "right":
+                    rect.size = pygame.Vector2(4 , 8)
+               elif properties["orientation"] == "left":
+                    rect.size = pygame.Vector2(4 , 8)
+                    rect.pos.x += 4
+          
+          return Collider(rect , self.collider_types[key]["collider_type"])
           
      def load_map(self , map_path):
           root = parse(map_path).getroot()
@@ -120,8 +141,7 @@ class TileMap():
                                         for x in range(size[0]//self.tilesize):
                                              if int(t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))]) == 0: continue
                                              if (layer_name == "colliders"):
-                                                  rect = FloatRect(pygame.Vector2(pos.x+x*self.tilesize , pos.y+y*self.tilesize) , pygame.Vector2(self.tilesize,self.tilesize))
-                                                  collider = Collider(rect , self.collider_types[int(t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))])-1])
+                                                  collider = self.get_collider_by_data(int(t_tab[int(y+(pos.y // self.tilesize))][int(x+(pos.x // self.tilesize))])-1, pygame.Vector2(pos.x+x*self.tilesize , pos.y+y*self.tilesize))
                                                   collider.move_above = True
                                                   colliders.append(collider)
                                              else:
@@ -152,9 +172,7 @@ class TileMap():
                                    # print(y)
                                    for x in range(cx*4 , (cx+1)*4):
                                         if (t_tab[y][x] != "0"):
-                                             size = pygame.Vector2(self.tilesize,self.tilesize)
-                                             rect = FloatRect(pygame.Vector2(x*self.tilesize , y*self.tilesize) , size)
-                                             collider = Collider(rect , self.collider_types[int(t_tab[y][x])-1])
+                                             collider = self.get_collider_by_data(int(t_tab[y][x])-1 , pygame.Vector2(x*self.tilesize , y*self.tilesize))
                                              c_chunk.append(collider)   
                               if c_chunk != []:
                                    self.collider_chunks[pos] = c_chunk

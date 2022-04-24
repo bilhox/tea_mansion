@@ -27,7 +27,7 @@ class App():
      
      def main_loop(self):
           while True:
-               time_infos = {"dt":self.clock.tick(125) * 0.001 , "max_fps":125}
+               time_infos = {"clock":self.clock , "dt":self.clock.tick(125) * 0.001 , "max_fps":125}
                self.scene_manager.update(time_infos)
 
 if __name__ == "__main__":

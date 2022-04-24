@@ -6,14 +6,33 @@
    <property name="collider_type" value="block"/>
   </properties>
  </tile>
+ <tile id="81" type="collider">
+  <properties>
+   <property name="collider_type" value="trap"/>
+   <property name="orientation" value="top"/>
+  </properties>
+ </tile>
+ <tile id="82" type="collider">
+  <properties>
+   <property name="collider_type" value="trap"/>
+   <property name="orientation" value="right"/>
+  </properties>
+ </tile>
  <tile id="115" type="collider">
   <properties>
    <property name="collider_type" value="platform"/>
   </properties>
  </tile>
- <tile id="152" type="collider">
+ <tile id="118" type="collider">
   <properties>
    <property name="collider_type" value="trap"/>
+   <property name="orientation" value="down"/>
+  </properties>
+ </tile>
+ <tile id="119" type="collider">
+  <properties>
+   <property name="collider_type" value="trap"/>
+   <property name="orientation" value="left"/>
   </properties>
  </tile>
  <tile id="311" type="decoration">

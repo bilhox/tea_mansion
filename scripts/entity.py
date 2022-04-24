@@ -30,7 +30,7 @@ class Player():
      
      def __init__(self , pos):
           self.collider = Collider(FloatRect(pos , pygame.Vector2(8,12)) , "block")
-          self.keys = {"left":False , "right":False}
+          self.keys = {"left":False , "right":False , "up":False , "down":False}
           self.dash_direction = "RIGHT"
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
           self.n_gravity = 0.08
@@ -43,7 +43,7 @@ class Player():
           self.kinematic = False
           self.on_moving_platform = False
           self.flip = False
-          self.dashing  = False
+          self.mode = 0
           
           texture = pygame.Surface([20 , 12])
           texture.fill([123 , 45 , 234])
@@ -61,12 +61,13 @@ class Player():
           
           #animation variables
           self.anim_manager = AnimationManager("./assets/player/animations/")
+          self.player_orb_t = pygame.image.load("./assets/player/player_orb.png").convert_alpha()
           self.current_anim = None
           
           self.timers = {}
           
           # Dash variables
-          self.dash_amount = 100
+          self.dash_amount = 50
           self.distance_traveled = 0
           self.dash_speed = 10
           
@@ -77,10 +78,11 @@ class Player():
      def set_action(self , id):
           
           if self.current_anim == None or id != self.current_anim.data.id != id:
-               self.current_anim = self.anim_manager.get(id)     
+               self.current_anim = self.anim_manager.get(id)  
      
-     def add_powertimer(self , name , duration):
-          self.timers[name] = {"timer":0 , "duration":duration}
+     def set_hitbox(self , size : pygame.Vector2):
+          self.rect.pos += self.rect.size / 2 - size / 2
+          self.rect.size = size   
      
      @property
      def rect(self):
@@ -98,10 +100,6 @@ class Player():
           self.chunk_pos = [int(self.rect.x // 32) , int(self.rect.y // 32)]
           self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
           
-          #update all timers
-          for timer in self.timers.values():
-               timer["timer"] += dt
-          
           # if the player is on a platform , update the player position
           try:
                self.collider.set_on_moving_platform(False)
@@ -110,7 +108,7 @@ class Player():
           
           # gravity
           self.air_time += 1
-          if not self.dashing:
+          if self.mode == 0:
                self.velocity.y = min(self.velocity.y + self.n_gravity * dt * max_fps , 5)
                # basic movements
                if(self.keys["left"]):
@@ -121,7 +119,7 @@ class Player():
                     self.velocity.x = (abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)))
                else:
                     self.velocity.x *= 0.5
-          else:
+          elif self.mode == 1:
                distance_remaining = self.dash_amount - self.distance_traveled
                distance_remaining_at_mid = max(self.distance_traveled - self.dash_amount / 2 , 0)
                # print(self.img_scale)
@@ -154,9 +152,24 @@ class Player():
                if self.distance_traveled - self.dash_amount >= 0:
                     self.img_scale.x = self.img_scale.y = 1
                     self.slow_mode = True
-                    self.dashing = False
+                    self.mode = 0
                     self.distance_traveled = 0
                     self.velocity = pygame.Vector2(0,0)
+          elif self.mode == 2:
+               if(self.keys["left"]):
+                    self.velocity.y = 0
+                    self.velocity.x = -(abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)))
+               elif(self.keys["right"]):
+                    self.velocity.y = 0
+                    self.velocity.x = (abs(self.velocity.x) + dt * max_fps * .1 * (self.speed - abs(self.velocity.x)))
+               elif(self.keys["up"]):
+                    self.velocity.x = 0
+                    self.velocity.y = -(abs(self.velocity.y) + dt * max_fps * .1 * (self.speed - abs(self.velocity.y)))
+               elif(self.keys["down"]):
+                    self.velocity.x = 0
+                    self.velocity.y = (abs(self.velocity.y) + dt * max_fps * .1 * (self.speed - abs(self.velocity.y)))
+               else:
+                    self.velocity *= 0.5
                     
           if self.velocity.y < 0:
                self.dash_direction = "UP"
@@ -169,18 +182,18 @@ class Player():
           movement = copy(self.velocity)
           movement *= dt * max_fps
           movement.x = max(min(movement.x , 7),-7)
-          movement.y = max(min(movement.y , 2.5),-7)
+          movement.y = max(min(movement.y , 2.5 if not self.mode == 2 else 7),-7)
           
           self.current_movement = movement
           
           if self.current_anim != None:
-               self.current_anim.play(dt)
+               self.current_anim.play(dt , max_fps)
      
      def update_after_moved(self):
           if (self.collision_side["bottom"]):
                self.air_time = 0
                self.velocity.y = 0
-          if (self.collision_side["top"]):
+          if (self.collision_side["top"]) and not self.mode == 2:
                self.velocity.y = 1
           if (self.collision_side["top"] and self.collision_side["bottom"] ):
                self.dead = True
@@ -193,8 +206,11 @@ class Player():
                else:
                     self.current_anim = None
                     
-          if self.current_anim != None:
+          if self.current_anim != None and self.mode != 2:
                self.current_texture = self.current_anim.get_current_img(self.flip)
+          elif self.mode == 2:
+               self.current_texture = self.player_orb_t
+               
      
      def collision(self , rects):
           

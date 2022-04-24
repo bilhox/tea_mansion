@@ -95,17 +95,34 @@ class Game(Scene):
                          if event.key == K_q:
                               self.player.keys["left"] = True
                          if event.key == K_z:
+                              self.player.keys["up"] = True
                               if (self.player.air_time <= 4):
                                    self.player.velocity.y = -(self.player.jump_amount)
+                         if event.key == K_s:
+                              self.player.keys["down"] = True
+                              
                     elif event.type == KEYUP:
                          if event.key == K_d:
                               self.player.keys["right"] = False
                          if event.key == K_q:
                               self.player.keys["left"] = False
+                         if event.key == K_z:
+                              self.player.keys["up"] = False
                          if event.key == K_s:
-                              if not self.player.dashing:
-                                   self.player.dashing = True
+                              self.player.keys["down"] = False
+                              if self.player.mode == 0:
+                                   self.player.mode = 1
                                    self.player.velocity.y = 0
+                         if event.key == K_p:
+                              if self.player.mode == 0:
+                                   self.player.set_hitbox(pygame.Vector2(6 , 6))
+                                   self.player.velocity = pygame.Vector2(0,0)
+                                   self.player.mode = 2
+                                   self.player.speed = 0.6
+                              elif self.player.mode == 2:
+                                   self.player.set_hitbox(pygame.Vector2(8 , 12))
+                                   self.player.mode = 0
+                                   self.player.speed = 1
                
      
      def update(self , time_infos):
@@ -167,6 +184,7 @@ class Game(Scene):
                     self.player.rect.pos = copy(self.tilemap.objects["player_spawn"]["coord"])
                     self.player.kinematic = False
                     self.player.dead = False
+                    self.player.mode = 0
                     self.player.reset_keys()
                     self.P_deathdata.set_intervall("pos" , self.player.rect.pos , self.player.rect.pos)
           else:
@@ -220,14 +238,4 @@ class Game(Scene):
           
           for image in self.images:
                self.screen.blit(image[0] , [image[1].x , image[1].y])
-          
-          
-if __name__ == "__main__":
-     screen = pygame.display.set_mode([704 , 512])
-     pygame.init()
-     scene = Game(screen)
-     scene.start()
-     clock = pygame.time.Clock()
-     while True:
-          scene.update(clock)
           
