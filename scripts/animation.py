@@ -51,7 +51,7 @@ class Animation:
                     self.frame += dt * max_fps * self.data.speed
                if self.frame > self.data.duration:
                     self.frame = 0 
-                    self.finished = True if self.data.infinite else False
+                    self.finished = False if self.data.infinite else True
                self.calc_image()
      
      def calc_image(self):

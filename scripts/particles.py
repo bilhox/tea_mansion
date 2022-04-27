@@ -1,98 +1,80 @@
 import pygame
 
 from pygame.locals import *
+from scripts.unclassed_functions import *
 from math import *
 from copy import *
 from random import *
 
+
 class Particle():
      
-     def __init__(self , pos , surface):
-          self.timer = 0
-          self.life_time = 1
+     def __init__(self , pos , motion , decay_rate , particle_imgs , duration , color=None):
+          
+          self.motion = motion
+          self.origin_motion = copy(self.motion)
           self.pos = pos
-          self.speed = 1
-          self.direction = pygame.Vector2(0,0)
-          self.surface = surface
-          self.end_life = False
-          self.speed_multiplicator = 1
-     
-     def update(self , dt , max_fps=60):
-          self.pos += self.direction * self.speed * dt * max_fps
-          self.timer += dt
-          if self.speed_multiplicator != 1:
-               self.speed *= self.speed_multiplicator**(dt * max_fps)
-          if (self.life_time - self.timer) <= 0:
-               self.end_life = True
-     
-     def display(self , surface , offset=pygame.Vector2(0,0)):
+          self.decay_rate = decay_rate
+          self.color = color
+          self.timer = 0
+          self.frame = 0
+          self.duration = duration
+          self.alive = True
+          self.particle_imgs = particle_imgs
           
-          surface.blit(self.surface , [self.pos.x - offset.x , self.pos.y - offset.y])
+          if color != None:
+               for i in range(len(self.particle_imgs)):
+                    self.particle_imgs[i] = swap_color(self.particle_imgs[i] , [255 , 255 , 255] , color)
 
-class Particle_data():
-     
-     def __init__(self):
-          
-          self.startpos = pygame.Vector2(0,0)
-          self.endpos = pygame.Vector2(0,0)
-          self.beginning_angle = -80
-          self.end_angle = -100
-          self.min_speed = 1
-          self.max_speed = 1
-          self.min_life_time = 1
-          self.max_life_time = 1
-          self.particle_spawncoef = 1
-          self.adding_particle_intervall = 10
-          self.particle_surfaces = []
-          self.speed_multiplicator = 0
-          
-     def set_intervall(self , type : str , a , b):
-          if (type == "life_time"):
-               self.min_life_time = a
-               self.max_life_time = b
-          elif (type == "speed"):
-               self.min_speed = a
-               self.max_speed = b
-          elif (type == "angle"):
-               self.beginning_angle = a
-               self.end_angle = b
-          elif (type == "pos"):
-               self.startpos = a
-               self.endpos = b
 
+     def draw(self , surface , offset=pygame.Vector2(0,0)):
+          
+          if self.alive:
+               surface.blit(self.particle_imgs[self.frame] , self.pos-offset)
+     
+     def update(self , dt):
+          self.timer += self.decay_rate * dt
+          if self.duration - self.timer <= 0:
+               self.frame += 1
+               self.timer = 0
+               if len(self.particle_imgs)-1 < self.frame:
+                    self.alive = False
+          
+          self.pos += self.motion * dt
+          
+          
 class Particle_system():
      
      def __init__(self):
-          
           self.particles = []
      
-     def update(self , dt , max_fps=60):
-               
+     def update(self , dt):
           for particle in self.particles:
-               particle.update(dt , max_fps)
                
-               if particle.end_life:
+               particle.update(dt)
+               if not particle.alive:
                     self.particles.remove(particle)
-               
      
-     def spawnparticles(self , amount , data : Particle_data , circular=False):
-          angle = 0
-          for i in range (amount):
-               particle = Particle(pygame.Vector2(uniform(data.startpos.x , data.endpos.x) , uniform(data.startpos.y , data.endpos.y)) , choice(data.particle_surfaces))
-               particle.speed = uniform(data.min_speed , data.max_speed)
-               t_dir = None
-               if circular:
-                    angle += (360 / amount)
-                    t_dir = [cos(radians(angle)),sin(radians(angle))]
-               else:
-                    t_dir = [cos(radians(data.beginning_angle+uniform(0 , data.end_angle))),sin(radians(data.beginning_angle+uniform(0 , data.end_angle)))]
-               
-               particle.direction = pygame.Vector2(t_dir)
-               particle.life_time = uniform(data.min_life_time , data.max_life_time)
-               particle.speed_multiplicator = data.speed_multiplicator
-               self.particles.append(particle)
-                    
-          
-     def display(self , surface , offset=pygame.Vector2(0,0)):
+     def draw(self , surface , offset=pygame.Vector2(0,0)):
           for particle in self.particles:
-               particle.display(surface , offset)
+               particle.draw(surface , offset) 
+               
+
+def particle_burst(particle_system , pos , amt , speed , part_imgs , duration , n_angles=None, color=None):
+     
+     if n_angles != None:
+          angles = []
+          for _ in range(n_angles):
+               a = radians(randint(1 , 180))
+               b = a+pi
+               angles.append(a)
+               angles.append(b)
+     
+     for i in range(amt):
+          if n_angles == None:
+               angle = radians(randint(1 , 360))
+          else:
+               angle = choice(angles)
+          s = speed * uniform(0.2 , 1)
+          motion = pygame.Vector2(cos(angle) * s , sin(angle) * s)
+          particle_system.particles.append(Particle(copy(pos) , motion , 2 , part_imgs.copy() , duration , color))

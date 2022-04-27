@@ -2,7 +2,6 @@ import pygame
 import sys   
 
 from pygame.locals import *
-from scripts.camera import Camera
 from scripts.entity import *
 from scripts.map import *   
 from copy import * 
@@ -14,7 +13,7 @@ class App():
      
      def __init__(self):
           pygame.init()
-          self.screen = pygame.display.set_mode([750 , 550],SCALED+RESIZABLE)
+          self.screen = pygame.display.set_mode([750 , 550])
           pygame.display.set_caption("Tea Mansion - v0.7.6")
           self.scene_manager = scene.Scene_Manager()
           self.scene_manager.scenes = {

@@ -4,7 +4,7 @@ import json
 
 from xml.etree.ElementTree import *
 from pygame.locals import *
-from scripts.entity import Book, Bookshelf
+from scripts.entity import Book, Bookshelf, Power
 from scripts.particles import *
 from scripts.form import *
 from scripts.camera import *
@@ -31,8 +31,7 @@ def load_tileset(tsx_path):
                tiles.append(tile)
                i+=1
      
-     colliders = {}
-     decoration = {}
+     special_tiles = {}
      
      for special_tile in root.findall("tile"):
           tile_id = special_tile.get("id")
@@ -40,22 +39,20 @@ def load_tileset(tsx_path):
           
           properties = {}
           
+          properties["type"] = tile_type
+          
           for property in special_tile.find("properties").findall("property"):
                properties[property.get("name")] = property.get("value")
           
-          if (tile_type == "collider"):
-               colliders[int(tile_id)] = properties
-          elif (tile_type == "decoration"):
-               decoration[int(tile_id)] = properties
+          special_tiles[int(tile_id)] = properties
      
-     return tiles , colliders , decoration , tile_size[0]
+     return tiles , special_tiles , tile_size[0]
 
 class TileMap():
      
      def __init__(self , chunk_size=[4,4]):
           
           self.tileset = []
-          self.collider_types = {}
           self.size = [0,0]
           self.collider_chunks = {}
           self.layers = {}
@@ -65,31 +62,36 @@ class TileMap():
           self.chunk_size = chunk_size
           self.tilesize = 0
           self.books = []
+          self.powers = []
           
      def get_collider_by_data(self , key , pos):
           
-          properties = self.collider_types[key]
+          properties = self.special_tiles[key]
           
           rect = FloatRect(pos , pygame.Vector2(8,8))
           
           if properties["collider_type"] == "trap":
                if properties["orientation"] == "top":
-                    rect.size = pygame.Vector2(8 , 4)
+                    rect.size = pygame.Vector2(6 , 4)
                     rect.pos.y += 4
+                    rect.pos.x += 1
                elif properties["orientation"] == "down":
-                    rect.size = pygame.Vector2(8 , 4)
+                    rect.size = pygame.Vector2(6 , 4)
                     rect.pos.y -= 4
+                    rect.pos.x += 1
                elif properties["orientation"] == "right":
-                    rect.size = pygame.Vector2(4 , 8)
+                    rect.size = pygame.Vector2(4 , 6)
+                    rect.pos.y += 1
                elif properties["orientation"] == "left":
-                    rect.size = pygame.Vector2(4 , 8)
+                    rect.size = pygame.Vector2(4 , 6)
                     rect.pos.x += 4
+                    rect.pos.y += 1
           
-          return Collider(rect , self.collider_types[key]["collider_type"])
+          return Collider(rect , self.special_tiles[key]["collider_type"])
           
      def load_map(self , map_path):
           root = parse(map_path).getroot()
-          self.tileset , self.collider_types , self.deco_types , self.tilesize = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
+          self.tileset , self.special_tiles , self.tilesize = load_tileset(os.path.join(os.path.dirname(map_path) , root.find("tileset").get("source")))
           self.size[0] = int(root.get("width"))
           self.size[1] = int(root.get("height"))
           
@@ -152,6 +154,8 @@ class TileMap():
                     self.platforms.append(Platform(pos,surface , colliders , platform_data))
                elif obj.get("type") == "book":
                     self.books.append(Book(pygame.Vector2(float(obj.get("x")) , float(obj.get("y"))) , pygame.Vector2(8,8)))
+               elif obj.get("type") == "power":
+                    self.powers.append(Power(pygame.Vector2(float(obj.get("x")) , float(obj.get("y"))) , obj.find("properties").find("property").get("value")))
                else:
                     data = {}
                     name = obj.get("name")
@@ -187,9 +191,9 @@ class TileMap():
                                    px = 0
                                    for x in range(cx*self.chunk_size[0] , (cx+1)*self.chunk_size[0]):
                                         if (t_tab[y][x] != "0"):
-                                             if not int(t_tab[y][x])-1 in self.deco_types.keys():
+                                             if not int(t_tab[y][x])-1 in self.special_tiles.keys() or self.special_tiles[int(t_tab[y][x])-1]["type"] != "decoration":
                                                   chunk_surf.blit(self.tileset[int(t_tab[y][x])-1] , [px*self.tilesize , py*self.tilesize])
-                                             elif (self.deco_types[int(t_tab[y][x])-1] == "torch"):
+                                             elif (self.special_tiles[int(t_tab[y][x])-1]["deco_type"] == "torch"):
                                                   self.deco_objects.append(Torch(pygame.Vector2([(cx*self.chunk_size[0]+px)*self.tilesize ,(cy*self.chunk_size[1]+py)*self.tilesize]) , self.tileset[int(t_tab[y][x])-1]))
                                    
                                         px += 1
@@ -286,18 +290,6 @@ class Platform():
                     self.pos -= movement
                     for collider in self.colliders:
                          collider.move(-movement)
-                         
-                    # self.pos -= movement
-                    # distance_a = sqrt((self.platform_data["to"].x - self.pos.x)**2 + (self.platform_data["to"].y - self.pos.y)**2)
-                    # for collider in self.colliders:
-                    #      collider.move(-movement)
-                    # if (self.distance - distance_a) <= 0:
-                    #      self.platform_data["direction"] = True
-                    #      self.paused = True
-                    #      movement = self.platform_data["from"] - self.pos
-                    #      self.pos = self.platform_data["from"]
-                    #      for collider in self.colliders:
-                    #           collider.move(movement)
                     
                     
           else:
@@ -322,7 +314,7 @@ class Level:
           self.tilemap.load_map(data["map_path"])
           
           self.name = data["name"]
-          self.n_book = data["book_number"]
+          self.books = copy(self.tilemap.books)
           
           self.bookshelf = Bookshelf(self.tilemap.objects["bookshelf"]["coord"])
 
@@ -337,34 +329,24 @@ class Torch:
           
           self.light = mult_image(self.light , [90 , 50 , 50])
           
-          
-          self.particle_data = Particle_data()
-          self.particle_data.set_intervall("pos" , self.pos+pygame.Vector2(4 , 2) , self.pos+pygame.Vector2(4 , 2))
-          self.particle_data.set_intervall("angle" , 0 , 360)
-          self.particle_data.set_intervall("speed" , 1 , 3)
-          self.particle_data.set_intervall("life_time" , 0.8 , 1)
-          self.particle_data.speed_multiplicator = 0.94
-          
-          p_surfaces = []
-          colors = [[207 , 87 , 60],[167 , 48 , 48],[222 , 158 , 65]]
-          
-          for i in range(2):
-               surf = pygame.Surface([1,1])
-               surf.fill(colors[i])
-               p_surfaces.append(surf)
-          
-          self.particle_data.particle_surfaces = p_surfaces
-          
           self.part_sys = Particle_system()
-          self.part_timer = 0
+          self.part_imgs = get_imgs_from_sheet("./assets/particles/burn_particles-Sheet.png" , 4)
+          self.colors = [
+               [255, 103, 43],
+               [222, 80, 24],
+               [255, 140, 25],
+               [129, 129, 127]
+               ]
      
      def update(self , dt , max_fps=60):
-          self.part_timer += dt
-          self.part_sys.update(dt , max_fps)
-          if 0.1 - self.part_timer <= 0:
-               self.part_timer = 0
-               self.part_sys.spawnparticles(1 , self.particle_data)
-     
+          
+          if len(self.part_sys.particles) < 20:
+               angle = radians(randint(-130 , -50))
+               motion = pygame.Vector2(cos(angle) * uniform(4 , 7) , sin(angle) * uniform(6 , 10))
+               self.part_sys.particles.append(Particle(self.pos+pygame.Vector2(3 , 2) , motion , 1.2 , self.part_imgs.copy() , random() , choice(self.colors)))
+
+          self.part_sys.update(dt)
+          
      def display_light(self , surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.light.get_size())
           light_offset = offset - (pygame.Vector2(4,4) - light_size / 2)
@@ -372,4 +354,4 @@ class Torch:
      
      def display(self , surface , offset=pygame.Vector2(0,0)):
           surface.blit(self.texture , [self.pos.x - offset.x , self.pos.y - offset.y])
-          self.part_sys.display(surface , offset)
+          self.part_sys.draw(surface , offset)
