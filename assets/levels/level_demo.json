@@ -1,20 +1,7 @@
 {
-    "default": 2,
+    "default": 0,
     "levels": [{
-            "name": "demo",
-            "path": "./assets/tilemaps/level_demo.tmx"
-        },
-        {
-            "name": "demo_2",
-            "path": "./assets/tilemaps/level_demo_2.tmx"
-        },
-        {
-            "name": "demo_3",
-            "path": "./assets/tilemaps/level_demo_3.tmx"
-        },
-        {
-            "name": "demo_3",
-            "path": "./assets/tilemaps/level_demo_3.tmx"
-        }
-    ]
+        "name": "demo",
+        "path": "C:/Users/Bilel MAHDJOUB/Documents/level_editing/main.tmx"
+    }]
 }

@@ -34,7 +34,13 @@ class Game(Scene):
           
      def next_level(self):
           
-          self.level.load(self.level.current_level + 1)
+          try:
+               self.level.load(self.level.current_level + 1)
+          except IndexError as e:
+               pygame.quit()
+               print("Game ended because there is no more level")
+               sys.exit(0)
+               
           self.tilemap = self.level.tilemap
           
           self.player.set_mode(0)

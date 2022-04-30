@@ -37,6 +37,9 @@ def load_tileset(tsx_path):
           tile_id = special_tile.get("id")
           tile_type = special_tile.get("type")
           
+          if special_tile.find("properties") == None:
+               continue
+          
           properties = {}
           
           properties["type"] = tile_type
