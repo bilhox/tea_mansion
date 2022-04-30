@@ -156,6 +156,13 @@ class TileMap():
                     self.books.append(Book(pygame.Vector2(float(obj.get("x")) , float(obj.get("y"))) , pygame.Vector2(8,8)))
                elif obj.get("type") == "power":
                     self.powers.append(Power(pygame.Vector2(float(obj.get("x")) , float(obj.get("y"))) , obj.find("properties").find("property").get("value")))
+               elif obj.get("type") == "bookshelf":
+                    if "bookshelfs" not in self.objects.keys():
+                         self.objects["bookshelfs"] = []
+                    self.objects["bookshelfs"].append({
+                         "coord":pygame.Vector2(float(obj.get("x")) , float(obj.get("y"))),
+                         "n_books":int(obj.find("properties").find("property").get("value"))
+                         })
                else:
                     data = {}
                     name = obj.get("name")
@@ -303,20 +310,32 @@ class Platform():
           surface.blit(self.surface , [self.pos.x - camera_pos.x , self.pos.y - camera_pos.y])
 
 
-class Level:
+class Level_Manager:
      
      def __init__(self , json_path):
           r = open(json_path)
           data = json.load(r)
           r.close()
           
+          self.levels = data["levels"]
+          self.load(data["default"])
+     
+     def load(self , key):
+          
+          self.current_level = key
+          
           self.tilemap = TileMap(chunk_size=[44 , 32])
-          self.tilemap.load_map(data["map_path"])
+          self.tilemap.load_map(self.levels[self.current_level]["path"])
           
-          self.name = data["name"]
+          self.name = self.levels[self.current_level]["name"]
           self.books = copy(self.tilemap.books)
+          self.total_books_needed = 0
           
-          self.bookshelf = Bookshelf(self.tilemap.objects["bookshelf"]["coord"])
+          self.bookshelfs = []
+          for bs_data in self.tilemap.objects["bookshelfs"]:
+               self.total_books_needed += bs_data["n_books"]
+               self.bookshelfs.append(Bookshelf(bs_data["coord"] , bs_data["n_books"]))
+          
 
 class Torch:
      

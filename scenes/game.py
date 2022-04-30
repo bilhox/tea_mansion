@@ -29,16 +29,35 @@ class Game(Scene):
 
           self.images = []
           self.book_carrying = []
+          self.book_sorted = 0
           self.power_timers = []
+          
+     def next_level(self):
+          
+          self.level.load(self.level.current_level + 1)
+          self.tilemap = self.level.tilemap
+          
+          self.player.set_mode(0)
+          self.player.velocity = pygame.Vector2(0,0)
+          self.player.reset_keys()
+          self.player.able_to_dash = False
+          self.player.air_time = 0
+          self.player.rect.pos = copy(self.tilemap.objects["player_spawn"]["coord"])
+          self.camera.pos = pygame.Vector2(self.player.map_pos)*8
+          self.camera.pos.x *= 44 ; self.camera.pos.y *= 32
+          
+          self.texts["levelmd"].set_string("Level : " + self.level.name)
+          self.texts["levelmd"].origin = pygame.Vector2(self.texts["levelmd"].size.x , 0)
      
      def start(self):
           
-          self.level = Level("./assets/levels/level_demo.json")
+          self.level = Level_Manager("./assets/levels/level_demo.json")
           self.tilemap = self.level.tilemap
           
           pygame.mouse.set_visible(False)
           self.player = Player(copy(self.tilemap.objects["player_spawn"]["coord"]))
-          
+          self.camera.pos = pygame.Vector2(self.player.map_pos)*8
+          self.camera.pos.x *= 44 ; self.camera.pos.y *= 32
           self.black_filter.fill([0,0,0,80])
           
           surf = pygame.Surface([7 , 7] , SRCALPHA)
@@ -102,13 +121,14 @@ class Game(Scene):
                          if event.key == K_s:
                               self.player.keys["down"] = False
                          if event.key == K_f:
-                              if self.level.bookshelf.is_colliding:
-                                   self.level.bookshelf.n_books += len(self.book_carrying)
-                                   self.book_carrying = []
-                                   self.level.bookshelf.update_text()
+                              for bookshelf in self.level.bookshelfs:
+                                   if bookshelf.is_colliding:
+                                        self.book_sorted += bookshelf.deposit(self.book_carrying)
                          if event.key == K_p:
                               if self.player.mode == 2:
                                    self.player.set_mode(0)
+                         if event.key == K_m:
+                              self.next_level()
                
      
      def update(self , time_infos):
@@ -208,13 +228,21 @@ class Game(Scene):
                torch.display_light(self.black_filter , self.camera.pos)
                torch.update(dt , max_fps)
           
-          self.level.bookshelf.update(dt , max_fps)
+          for bookshelf in self.level.bookshelfs:
+               
+               bookshelf.update(dt , max_fps)
           
+               if collide_rect(self.player.rect, bookshelf.rect):
+                    bookshelf.is_colliding = True
+               else:
+                    bookshelf.is_colliding = False
           
-          if collide_rect(self.player.rect, self.level.bookshelf.rect):
-               self.level.bookshelf.is_colliding = True
-          else:
-               self.level.bookshelf.is_colliding = False
+          if self.book_sorted >= self.level.total_books_needed and self.scene_manager.transition == None:
+               def foo():
+                    self.book_sorted = 0
+                    self.next_level()
+                    self.scene_manager.transition = Rand_transition(False)
+               self.scene_manager.transition = Fade_transition(1 , True , foo)
           
           # -----------------------------------------------------------------
           # Powers code
@@ -227,7 +255,14 @@ class Game(Scene):
                          self.player.able_to_dash = True
                     elif power.type == "orb":
                          self.player.set_mode(2)
-                         self.power_timers.append( {"type":"orb" , "duration":4 , "timer":0} )
+                         present = False
+                         for timer in self.power_timers:
+                              if timer["type"] == "orb":
+                                   timer["timer"] = 0
+                                   present = True
+                                   break
+                         if not present:
+                              self.power_timers.append( {"type":"orb" , "duration":4 , "timer":0} )
                power.update(dt)
           # -----------------------------------------------------------------
           
@@ -244,7 +279,8 @@ class Game(Scene):
           
           self.tilemap.display_layer(self.camera.render_surf ,"foreground",chunk=self.room_pos,offset=self.camera.pos)
           
-          self.level.bookshelf.display(self.camera.render_surf , self.camera.pos)
+          for bookshelf in self.level.bookshelfs:
+               bookshelf.display(self.camera.render_surf , self.camera.pos)
           if not self.player.dead:
                self.player.display(self.camera.render_surf , self.camera.pos)
                

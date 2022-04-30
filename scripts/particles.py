@@ -47,10 +47,12 @@ class Particle_system():
      
      def __init__(self):
           self.particles = []
+          self.custom_update = None
      
      def update(self , dt):
           for particle in self.particles:
-               
+               if self.custom_update != None:
+                    self.custom_update(particle , dt)
                particle.update(dt)
                if not particle.alive:
                     self.particles.remove(particle)

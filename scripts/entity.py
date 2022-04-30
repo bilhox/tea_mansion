@@ -35,7 +35,7 @@ class Player():
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
           self.n_gravity = 0.035
           self.velocity = pygame.Vector2(0,0)
-          self.speed = .9
+          self.speed = .8
           self.jump_amount = 1.55
           self.air_time = 0
           self.current_movement = pygame.Vector2(0,0)
@@ -84,7 +84,7 @@ class Player():
           self.mode = mode
           self.img_scale = pygame.Vector2(1 , 1)
           if self.mode == 0:
-               self.speed = .9
+               self.speed = .8
                self.collider_check = True
           elif self.mode == 2:
                self.set_hitbox(pygame.Vector2(6 , 6) , self.rect.size / 2 - pygame.Vector2(3 , 3))
@@ -256,12 +256,16 @@ class Player():
                     offset.y = 3
                elif self.collision_side["bottom"]:
                     offset.y = -10
+               elif self.collision_side["top"] and self.collision_side["bottom"]:
+                    self.dead = True
                else:
                     offset.y = 0
                if self.collision_side["right"]:
                     offset.x = -1
                elif self.collision_side["left"]:
                     offset.x = 1
+               elif self.collision_side["right"] and self.collision_side["left"]:
+                    self.dead = True
                else:
                     offset.x = 0
                self.rect.pos += offset
@@ -453,7 +457,7 @@ class Book(Sprite):
 
 class Bookshelf(Sprite):
      
-     def __init__(self , pos):
+     def __init__(self , pos , n_books):
           super().__init__(pos , pygame.Vector2(32 , 48))
           self.texture = pygame.image.load("./assets/objects/bookshelf.png").convert_alpha()
           self.shadow = self.texture.copy()
@@ -462,9 +466,10 @@ class Bookshelf(Sprite):
           self.shadow_scale = [1 , 1]
           self.is_colliding = False
           self.scale_timer = 0
+          self.full = False
           
           self.n_books = 0
-          self.books_needed = 5
+          self.books_needed = n_books
           
           font = Font("./assets/fonts/small_font.png" , [255 , 255 , 255])
           
@@ -473,8 +478,20 @@ class Bookshelf(Sprite):
      
      def update_text(self):
           
-          self.book_text.set_string(f"{self.n_books} / {self.books_needed}")
+          self.book_text.set_string(f"{self.n_books} / {self.books_needed}" if not self.full else "full !")
           self.book_text.pos = self.rect.pos + pygame.Vector2(self.rect.size.x / 2 - self.book_text.size.x / 2 , -self.book_text.size.y - 10)
+     
+     def deposit(self , book_carrying : list):
+          if not self.full:
+               self.n_books += len(book_carrying) - (len(book_carrying) - self.books_needed)
+               if self.n_books >= self.books_needed:
+                    self.full = True
+               books_to_remove = len(book_carrying) - (len(book_carrying) - self.books_needed)
+               del book_carrying[:books_to_remove]
+               self.update_text()
+               return len(book_carrying) - (len(book_carrying) - self.books_needed)
+          
+          return 0
      
      def update(self , dt , max_fps=60):
                
