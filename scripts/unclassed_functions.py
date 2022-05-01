@@ -30,3 +30,12 @@ def swap_color(img,old_c,new_c):
      surf.blit(img,(0,0))
      surf.set_colorkey([0,0,0])
      return surf
+
+def get_timestring(time : int):
+     vals = []
+     vals.append(time // 60)
+     vals.append(time % 60)
+     if vals[0] == 0:
+          return f"{vals[1]}s"
+     else:
+          return f"{vals[0]}m {vals[1]}s"

@@ -15,16 +15,22 @@ class Game(Scene):
           super().__init__(screen , scene_manager)
           self.level = None
           self.camera = Camera([0,0] , [352 , 256])
-          self.font = pygame.font.Font(None , 20)
-          self.game_timer = 0
           self.death_timer = 0
           self.map_transition = False
           
           self.black_filter = pygame.Surface([self.camera.rect.size.x , self.camera.rect.size.y] , SRCALPHA)
+          self.black_filter.fill([0,0,0,80])
           
           self.particle_system = Particle_system()
           
           self.bs_filter = pygame.Surface([self.camera.size.x , self.camera.size.y] , SRCALPHA)
+          
+          border = pygame.image.load("./assets/border_shadow.png").convert_alpha()
+          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.size.x , 12]) , [0 , self.camera.size.y - 8])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , -90) , [-4 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , 90) , [self.camera.size.x - 8 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.x , 12]) , 180) , [0 , -4])
+          
           self.game_timer = 0
 
           self.images = []
@@ -34,15 +40,19 @@ class Game(Scene):
           
      def next_level(self):
           
+          self.book_carrying.clear()
+          self.power_timers.clear()
+          
           try:
                self.level.load(self.level.current_level + 1)
           except IndexError as e:
-               pygame.quit()
-               print("Game ended because there is no more level")
-               sys.exit(0)
+               self.game_ended = True
+               pygame.mouse.set_visible(True)
+               return
                
           self.tilemap = self.level.tilemap
           
+
           self.player.set_mode(0)
           self.player.velocity = pygame.Vector2(0,0)
           self.player.reset_keys()
@@ -52,49 +62,61 @@ class Game(Scene):
           self.camera.pos = pygame.Vector2(self.player.map_pos)*8
           self.camera.pos.x *= 44 ; self.camera.pos.y *= 32
           
+          self.game_timer = 0
           self.texts["levelmd"].set_string("Level : " + self.level.name)
           self.texts["levelmd"].origin = pygame.Vector2(self.texts["levelmd"].size.x , 0)
      
      def start(self):
           
-          self.level = Level_Manager("./assets/levels/level_demo.json")
+          self.level = Level_Manager("./assets/datas/level_demo.json")
           self.tilemap = self.level.tilemap
           
           pygame.mouse.set_visible(False)
           self.player = Player(copy(self.tilemap.objects["player_spawn"]["coord"]))
           self.camera.pos = pygame.Vector2(self.player.map_pos)*8
           self.camera.pos.x *= 44 ; self.camera.pos.y *= 32
-          self.black_filter.fill([0,0,0,80])
-          
-          surf = pygame.Surface([7 , 7] , SRCALPHA)
-          pygame.draw.circle(surf , [143 , 65 , 234] , [4,4] , 3)
-          
-          border = pygame.image.load("./assets/border_shadow.png").convert_alpha()
-          
-          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.size.x , 12]) , [0 , self.camera.size.y - 8])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , -90) , [-4 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , 90) , [self.camera.size.x - 8 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.x , 12]) , 180) , [0 , -4])
           
           self.texts = {}
           
-          s2font = Font("./assets/fonts/small_font.png" , [255 , 255 , 255])
-          s2font.zoom = 2
+          sfont = Font("./assets/fonts/small_font.png" , [255 , 255 , 255])
+          sfont.zoom = 2
           
-          fps_text = Text(s2font , "FPS : 0")
-          fps_text.pos = pygame.Vector2(6,6)
+          lfont = Font("./assets/fonts/large_font.png" , [255 , 255 , 255])
+          lfont.zoom = 2
           
-          levelmd_text = Text(s2font , "Level : " + self.level.name)
+          fps_text = Text(sfont , "FPS : 0")
+          fps_text.pos = pygame.Vector2(6,self.screen.get_height() - fps_text.size.y - 1)
+          
+          timer_text = Text(sfont , f"Time : {get_timestring(int(self.game_timer))}")
+          timer_text.pos = pygame.Vector2(6,6)
+          
+          levelmd_text = Text(sfont , "Level : " + self.level.name)
           levelmd_text.pos = pygame.Vector2(self.screen.get_width() - 6 , 6)
           levelmd_text.origin = pygame.Vector2(levelmd_text.size.x , 0)
           
+          thanks_text = Text(lfont , "Thanks for playing !")
+          thanks_text.pos = pygame.Vector2(self.screen.get_width() / 2 , 200)
+          thanks_text.origin = thanks_text.size / 2
+          
+          click_text = Text(sfont , "Click to continue ...")
+          click_text.pos = pygame.Vector2(self.screen.get_width() / 2 , 500)
+          click_text.origin = click_text.size / 2
+          
           self.texts["fps"] = fps_text
           self.texts["levelmd"] = levelmd_text
+          self.texts["game timer"] = timer_text
+          self.texts["thanks"] = thanks_text
+          self.texts["click"] = click_text
           
           self.part_imgs = []
           img = pygame.Surface([5 , 5] , SRCALPHA)
           pygame.draw.circle(img , [96, 0, 156] , [3 , 3] , 2)
           self.part_imgs.append(img)
+          
+          self.game_ended = False
+          
+          self.thanks_timer = 0
+          self.game_timer = 0
      
      def events(self):
           
@@ -102,7 +124,7 @@ class Game(Scene):
                if event.type == QUIT:
                     pygame.quit()
                     sys.exit(0)
-               if not self.map_transition and not self.player.dead and not self.scene_manager.transition:
+               if not self.map_transition and not self.player.dead and not self.scene_manager.transition and not self.game_ended:
                     if event.type == KEYDOWN:
                          if event.key == K_d:
                               self.player.keys["right"] = True
@@ -133,12 +155,33 @@ class Game(Scene):
                          if event.key == K_p:
                               if self.player.mode == 2:
                                    self.player.set_mode(0)
-                         if event.key == K_m:
-                              self.next_level()
-               
+               elif self.game_ended and self.thanks_timer > 1 and not self.scene_manager.transition:
+                    if event.type == MOUSEBUTTONDOWN:
+                         def change_scene():
+                              self.scene_manager.set_scene("menu")
+                              self.scene_manager.transition = Fade_transition(1 , False)
+                         self.scene_manager.transition = Fade_transition(1 , True , change_scene)
+     
+     def thanks(self , time_infos):
+          
+          dt = time_infos["dt"]
+          
+          self.thanks_timer += dt
+          self.screen.fill([0,0,0])
+          self.events()
+          self.texts["thanks"].display(self.screen)
+          
+          if self.thanks_timer > 2:
+               if cos(self.thanks_timer * pi) > 0:
+                    self.texts["click"].display(self.screen)
      
      def update(self , time_infos):
+          if self.game_ended:
+               self.thanks(time_infos)
+          else:
+               self.game(time_infos)
           
+     def game(self , time_infos):
           dt = time_infos["dt"]
           clock = time_infos["clock"]
           max_fps = time_infos["max_fps"]
@@ -311,9 +354,11 @@ class Game(Scene):
           # Finally , display texts that are out of the camera
           
           self.texts["fps"].set_string(f"FPS : {int(clock.get_fps())}")
+          self.texts["game timer"].set_string(f"Time : {get_timestring(int(self.game_timer))}")
           
-          for text in self.texts.values():
-               text.display(self.screen)
+          for key , text in self.texts.items():
+               if not key in ["thanks" , "click"]:
+                    text.display(self.screen)
           
           for image in self.images:
                self.screen.blit(image[0] , [image[1].x , image[1].y])

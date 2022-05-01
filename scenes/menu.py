@@ -14,9 +14,6 @@ class Menu(Scene):
           
           self.game_title = []
           self.background = pygame.image.load("./assets/start_menu.png").convert_alpha()
-         
-     def start(self):
-          pygame.mouse.set_visible(True)
           
           fnt = Font("./assets/fonts/large_font.png" , [255,255,255])
           fnt.zoom = 4
@@ -52,6 +49,9 @@ class Menu(Scene):
           }
          
           self.start_button = Button([self.screen.get_width() / 2 - 32 ,300],[64 , 64], start_button_data)
+         
+     def start(self):
+          pygame.mouse.set_visible(True)
 
           self.timer = 0
           

@@ -1,7 +1,0 @@
-{
-    "default": 0,
-    "levels": [{
-        "name": "demo",
-        "path": "here"
-    }]
-}
