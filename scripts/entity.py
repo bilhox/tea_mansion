@@ -456,6 +456,8 @@ class Bookshelf(Sprite):
           self.n_books = 0
           self.books_needed = n_books
           
+          self.full_sound = pygame.mixer.Sound("./assets/sfx/bookshelf_full.wav")
+          
           font = Font("./assets/fonts/small_font.png" , [255 , 255 , 255])
           
           self.book_text = Text(font , f"0 / {self.books_needed}")
@@ -468,13 +470,14 @@ class Bookshelf(Sprite):
      
      def deposit(self , book_carrying : list):
           if not self.full:
-               self.n_books += len(book_carrying) - (len(book_carrying) - self.books_needed)
+               self.n_books += len(book_carrying)
                if self.n_books >= self.books_needed:
                     self.full = True
-               books_to_remove = len(book_carrying) - (len(book_carrying) - self.books_needed)
+                    self.full_sound.play()
+               books_to_remove = len(book_carrying) - max(len(book_carrying) - self.books_needed , 0)
                del book_carrying[:books_to_remove]
                self.update_text()
-               return len(book_carrying) - (len(book_carrying) - self.books_needed)
+               return len(book_carrying) - max(len(book_carrying) - self.books_needed , 0)
           
           return 0
      

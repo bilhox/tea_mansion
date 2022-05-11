@@ -33,7 +33,7 @@ class Menu(Scene):
                ao_radians += pi/4
                
           self.sounds["button"] = pygame.mixer.Sound("./assets/sfx/menu_select.wav")
-          self.sounds["button"].set_volume(0.5)
+          self.sounds["button"].set_volume(0.2)
           
           def start_game():
                self.sounds["button"].play()
@@ -41,6 +41,7 @@ class Menu(Scene):
                     self.scene_manager.set_scene("game")
                     self.scene_manager.transition = Fade_transition(1 , False)
                self.scene_manager.transition = Fade_transition(1 , True , change_scene)
+               pygame.mixer.music.fadeout(1000)
           
           start_button_data = {
           "target":start_game,
@@ -60,7 +61,7 @@ class Menu(Scene):
          
      def start(self):
           pygame.mouse.set_visible(True)
-          pygame.mixer.music.load("./assets/sfx/old city theme.ogg")
+          pygame.mixer.music.load("./assets/sfx/menu.ogg")
           pygame.mixer.music.play(loops=2000)
           self.timer = 0
           

@@ -40,15 +40,19 @@ class Game(Scene):
           
           self.sounds = {}
           
-          self.sounds["dash"] = pygame.mixer.Sound("./assets/sfx/dash.mp3")
-          self.sounds["book_gathered"] = pygame.mixer.Sound("./assets/sfx/book_gathered.mp3")
-          self.sounds["bookshelf_full"] = pygame.mixer.Sound("./assets/sfx/bookshelf_full.mp3")
-          self.sounds["item_gathered"] = pygame.mixer.Sound("./assets/sfx/item_gathered.mp3")
+          self.sounds["dash"] = pygame.mixer.Sound("./assets/sfx/dash.wav")
+          self.sounds["jump"] = pygame.mixer.Sound("./assets/sfx/jump.wav")
+          self.sounds["book_gathered"] = pygame.mixer.Sound("./assets/sfx/book_gathered.wav")
+          self.sounds["end_game"] = pygame.mixer.Sound("./assets/sfx/bookshelf_full.wav")
+          self.sounds["item_gathered"] = pygame.mixer.Sound("./assets/sfx/item_gathered.wav")
 
+          for sound in self.sounds.values():
+               sound.set_volume(0.1)
           
      def next_level(self):
           
           self.book_carrying.clear()
+          self.book_sorted = 0
           self.power_timers.clear()
           
           try:
@@ -56,6 +60,7 @@ class Game(Scene):
           except IndexError as e:
                self.game_ended = True
                pygame.mouse.set_visible(True)
+               self.sounds["end_game"].play()
                return
                
           self.tilemap = self.level.tilemap
@@ -69,17 +74,17 @@ class Game(Scene):
           self.player.rect.pos = copy(self.tilemap.objects["player_spawn"]["coord"])
           self.camera.pos = pygame.Vector2(self.player.map_pos)*8
           self.camera.pos.x *= 44 ; self.camera.pos.y *= 32
-          self.book_carrying.clear()
           
           self.game_timer = 0
           self.texts["levelmd"].set_string("Level : " + self.level.name)
           self.texts["levelmd"].origin = pygame.Vector2(self.texts["levelmd"].size.x , 0)
+          
+          pygame.mixer.music.load("./assets/sfx/game.wav")
+          pygame.mixer.music.play(loops=2000)
      
      def start(self):
           
-          pygame.mixer.fadeout(1)
-          pygame.mixer.stop()
-          pygame.mixer.music.load("./assets/sfx/game.mp3")
+          pygame.mixer.music.load("./assets/sfx/game.wav")
           pygame.mixer.music.play(loops=2000)
           
           self.level = Level_Manager("./assets/datas/level_demo.json")
@@ -147,10 +152,12 @@ class Game(Scene):
                          if event.key == K_z:
                               self.player.keys["up"] = True
                               if (self.player.air_time <= 4):
+                                   self.sounds["jump"].play()
                                    self.player.velocity.y = -(self.player.jump_amount)
                          if event.key == K_s:
                               self.player.keys["down"] = True
                               if self.player.mode == 0 and self.player.able_to_dash:
+                                   self.sounds["dash"].play()
                                    self.player.set_mode(1)
                               
                     elif event.type == KEYUP:
@@ -165,7 +172,7 @@ class Game(Scene):
                          if event.key == K_f:
                               for bookshelf in self.level.bookshelfs:
                                    if bookshelf.is_colliding:
-                                        self.book_sorted += bookshelf.deposit(self.book_carrying)
+                                        self.book_sorted += bookshelf.deposit(self.book_carrying) 
                          if event.key == K_p:
                               if self.player.mode == 2:
                                    self.player.set_mode(0)
@@ -281,6 +288,7 @@ class Game(Scene):
                if not book.caught:
                     if collide_rect(book.rect , self.player.rect):
                          book.is_caught()
+                         self.sounds["book_gathered"].play()
                          self.book_carrying.append(book)
                elif book.to_remove:
                     self.tilemap.books.remove(book)
@@ -303,6 +311,7 @@ class Game(Scene):
           if self.book_sorted >= self.level.total_books_needed and self.scene_manager.transition == None:
                def foo():
                     self.book_sorted = 0
+                    pygame.mixer.music.fadeout(1000)
                     self.next_level()
                     self.scene_manager.transition = Rand_transition(False)
                self.scene_manager.transition = Fade_transition(1 , True , foo)
@@ -312,6 +321,7 @@ class Game(Scene):
           
           for power in self.level.tilemap.powers:
                if collide_rect(self.player.rect , power.rect) and not power.caught:
+                    self.sounds["item_gathered"].play()
                     power.caught = True  
                     particle_burst(power.part_sys , copy(power.rect.pos) , 60 , 200 , [power.part_img] , 0.2 , n_angles=2)
                     if power.type == "dash":
