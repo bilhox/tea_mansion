@@ -38,6 +38,14 @@ class Game(Scene):
           self.book_sorted = 0
           self.power_timers = []
           
+          self.sounds = {}
+          
+          self.sounds["dash"] = pygame.mixer.Sound("./assets/sfx/dash.mp3")
+          self.sounds["book_gathered"] = pygame.mixer.Sound("./assets/sfx/book_gathered.mp3")
+          self.sounds["bookshelf_full"] = pygame.mixer.Sound("./assets/sfx/bookshelf_full.mp3")
+          self.sounds["item_gathered"] = pygame.mixer.Sound("./assets/sfx/item_gathered.mp3")
+
+          
      def next_level(self):
           
           self.book_carrying.clear()
@@ -61,12 +69,18 @@ class Game(Scene):
           self.player.rect.pos = copy(self.tilemap.objects["player_spawn"]["coord"])
           self.camera.pos = pygame.Vector2(self.player.map_pos)*8
           self.camera.pos.x *= 44 ; self.camera.pos.y *= 32
+          self.book_carrying.clear()
           
           self.game_timer = 0
           self.texts["levelmd"].set_string("Level : " + self.level.name)
           self.texts["levelmd"].origin = pygame.Vector2(self.texts["levelmd"].size.x , 0)
      
      def start(self):
+          
+          pygame.mixer.fadeout(1)
+          pygame.mixer.stop()
+          pygame.mixer.music.load("./assets/sfx/game.mp3")
+          pygame.mixer.music.play(loops=2000)
           
           self.level = Level_Manager("./assets/datas/level_demo.json")
           self.tilemap = self.level.tilemap

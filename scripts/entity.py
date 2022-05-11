@@ -33,10 +33,10 @@ class Player():
           self.keys = {"left":False , "right":False , "up":False , "down":False}
           self.dash_direction = "RIGHT"
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
-          self.n_gravity = 0.035
+          self.n_gravity = 0.038
           self.velocity = pygame.Vector2(0,0)
           self.speed = .8
-          self.jump_amount = 1.55
+          self.jump_amount = 1.65
           self.air_time = 0
           self.current_movement = pygame.Vector2(0,0)
           self.dead = False
@@ -120,8 +120,6 @@ class Player():
                          motion = pygame.Vector2(randint(-20 , -15) , 0)
                     elif self.dash_direction == "LEFT":
                          motion = pygame.Vector2(randint(15 , 20) , 0)
-                    elif self.dash_direction == "UP":
-                         motion = pygame.Vector2(0 , randint(-20 , -15))
                     self.part_sys.particles.append(Particle(
                          self.rect.pos + (pygame.Vector2(0 , randint(1 , self.rect.size.y-1)) if not self.dash_direction == "UP" else pygame.Vector2(randint(1 , self.rect.size.x-1) , self.rect.size.y)) ,
                          motion , # mouvement
@@ -175,27 +173,17 @@ class Player():
                distance_remaining_at_mid = max(self.distance_traveled - self.dash_amount / 2 , 0)
                # dashing scale effect code
                if self.dash_amount / 2 - self.distance_traveled >= 0:
-                    if not self.dash_direction == "UP":
-                         self.img_scale.x = 1 + 2 * min(self.distance_traveled / (self.dash_amount / 2), 1)
-                         self.img_scale.y = 1 - 0.9 * min(self.distance_traveled / (self.dash_amount / 2), 1)
-                    else:
-                         self.img_scale.x = 1 - 0.9 * min(self.distance_traveled / (self.dash_amount / 2), 1)
-                         self.img_scale.y = 1 + 2 * min(self.distance_traveled / (self.dash_amount / 2), 1)
+                    self.img_scale.x = 1 + 2 * min(self.distance_traveled / (self.dash_amount / 2), 1)
+                    self.img_scale.y = 1 - 0.9 * min(self.distance_traveled / (self.dash_amount / 2), 1)
                else:
-                    if not self.dash_direction == "UP":
-                         self.img_scale.x = 3 - 2 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
-                         self.img_scale.y = 0.1 + 0.9 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
-                    else:
-                         self.img_scale.x = 0.1 + 0.9 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
-                         self.img_scale.y = 3 - 2 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
+                    self.img_scale.x = 3 - 2 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
+                    self.img_scale.y = 0.1 + 0.9 * min(distance_remaining_at_mid / (self.dash_amount / 2), 1)
                
                # dashing movement
                if self.dash_direction == "LEFT":
                     self.velocity.x = -self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05)  * dt * max_fps
                elif self.dash_direction == "RIGHT":
                     self.velocity.x = self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05) * dt * max_fps
-               elif self.dash_direction == "UP":
-                    self.velocity.y = -self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05) * dt * max_fps
                
                self.distance_traveled += max(min(self.dash_speed * max(distance_remaining / (self.dash_amount), 0.05) * dt**2 * max_fps**2 , 7) , -7)
                
@@ -221,9 +209,6 @@ class Player():
                     self.velocity.y = (abs(self.velocity.y) + dt * max_fps * .1 * (self.speed - abs(self.velocity.y)))
                else:
                     self.velocity *= 0.5
-                    
-          if self.velocity.y < 0:
-               self.dash_direction = "UP"
           
           if self.velocity.x < 0:
                self.flip = True
