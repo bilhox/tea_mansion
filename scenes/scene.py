@@ -1,5 +1,6 @@
 import pygame
 import sys
+import threading
 
 from math import pi , cos , sin , radians
 from random import randint , choice
@@ -44,7 +45,9 @@ class Transition:
                
                if self.timer - self.duration >= 0:
                     if self.event != None:
-                         self.event()
+                         event_thread = threading.Thread(target=self.event)
+                         event_thread.start()
+                         event_thread.join()
                     self.finished = True
      
      def display(self , screen):

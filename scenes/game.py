@@ -47,7 +47,7 @@ class Game(Scene):
           self.sounds["item_gathered"] = pygame.mixer.Sound("./assets/sfx/item_gathered.wav")
 
           for sound in self.sounds.values():
-               sound.set_volume(0.1)
+               sound.set_volume(0.2)
           
      def next_level(self):
           
@@ -151,14 +151,14 @@ class Game(Scene):
                               self.player.keys["left"] = True
                          if event.key == K_z:
                               self.player.keys["up"] = True
-                              if (self.player.air_time <= 4):
-                                   self.sounds["jump"].play()
-                                   self.player.velocity.y = -(self.player.jump_amount)
-                         if event.key == K_s:
-                              self.player.keys["down"] = True
                               if self.player.mode == 0 and self.player.able_to_dash:
                                    self.sounds["dash"].play()
                                    self.player.set_mode(1)
+                         if event.key == K_s:
+                              self.player.keys["down"] = True
+                              if (self.player.air_time <= 4):
+                                   self.sounds["jump"].play()
+                                   self.player.velocity.y = -(self.player.jump_amount)
                               
                     elif event.type == KEYUP:
                          if event.key == K_d:

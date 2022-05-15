@@ -1,5 +1,4 @@
 import pygame
-import asyncio
 
 from math import *
 from pygame.locals import *
@@ -11,6 +10,8 @@ from scripts.unclassed_functions import *
 from random import *
 from copy import *
 
+# No documentation because I was too lazy to make one
+
 class Sprite():
      
      def __init__(self , pos , box_size):
@@ -20,13 +21,10 @@ class Sprite():
      def update(self , dt , max_fps=60):
           pass
 
-     def evnt_handler(self , event : pygame.event.Event):
-          pass
-
      def display(self , surface , offset=pygame.Vector2(0,0)):
           surface.blit(self.surface , [self.rect.x - offset.x , self.rect.y - offset.y])
 
-class Player():
+class Player(Sprite):
      
      def __init__(self , pos):
           self.collider = Collider(FloatRect(pos , pygame.Vector2(8,12)) , "block")
@@ -366,7 +364,7 @@ class Book(Sprite):
           self.part_timer = 0
           
           self.light = pygame.image.load("./assets/light.png").convert_alpha()
-          self.light = pygame.transform.scale(self.light , [128 , 128])
+          self.light = pygame.transform.scale(self.light , [100 , 100])
           
           self.light = mult_image(self.light , [180]*3)
           self.light = mult_image(self.light , [randint(0 , 255), randint(0 , 255), randint(0 , 255)])
@@ -425,7 +423,7 @@ class Book(Sprite):
      def display_light(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.light.get_size())
           if self.caught:
-               light_size = pygame.Vector2([self.light.get_width()*self.scale_coef , self.light.get_height()*self.scale_coef])
+               light_size = pygame.Vector2([self.light.get_width()*max(self.scale_coef , 0) , self.light.get_height()*max(self.scale_coef , 0) ])
                light_offset = offset + self.anim_offset - (self.rect.size / 2 - light_size / 2)
                surface.blit(pygame.transform.scale(self.light , light_size) , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
           else:
@@ -477,7 +475,7 @@ class Bookshelf(Sprite):
                books_to_remove = len(book_carrying) - max(len(book_carrying) - self.books_needed , 0)
                del book_carrying[:books_to_remove]
                self.update_text()
-               return len(book_carrying) - max(len(book_carrying) - self.books_needed , 0)
+               return books_to_remove
           
           return 0
      
