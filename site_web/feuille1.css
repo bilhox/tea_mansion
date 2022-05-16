@@ -1,0 +1,271 @@
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* --------------------------------------------------titre/header--------------------------------------------------- */
+
+section {
+    /* création de l'espace du titre */
+    height: 100px;
+    width: 100%;
+    background-image: url('fond.png');
+    color: rgb(255, 255, 255);
+    font-family: 'Press Start 2P';
+    font-size: 25px;
+    padding-top: 30px;
+    text-align: center;
+    display: flex;
+    padding-left: 10px;
+}
+
+.typing {
+    margin-left: 10px;
+}
+
+.typing::after {
+    /* création du "curseur" */
+    content: "";
+    position: absolute;
+    width: 1px;
+    height: 5%;
+    border-right: 2px solid white;
+    animation: blink 1s infinite ease;
+}
+
+@keyframes blink {
+    /* animation du "curseur" */
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+body {
+    background-image: url('fond.png');
+}
+
+
+/*---------------------------------------------style de la partie du "bandeau"-------------------------------------- */
+
+#bandeaugif {
+    /*style  de la div contenant le gif*/
+    padding: 20px;
+    width: 100%;
+    height: 270px;
+    background-image: url('gif1.gif');
+}
+
+#bandeaublock {
+    /* style du block rose au milieu du bandeau*/
+    position: relative;
+    z-index: 2;
+    width: 400px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: rgba(122, 54, 123, 0.7);
+    margin: auto;
+    font-family: zen kurenaido;
+    font-size: 20px;
+    margin-top: 60px;
+    border-radius: 20px;
+    text-align: center;
+    color: rgb(248, 245, 241);
+    box-shadow: 0px 4px 5px rgb(28 26 23);
+}
+
+
+/*------------------------------------------------------------------------------------------------------------------*/
+
+
+/*--------------------------------------------style de la div avec deux blocks--------------------------------------*/
+
+#maindiv {
+    /*div contenant les deux blocks*/
+    display: flex;
+    flex-direction: row;
+}
+
+
+/*----------------------------------------------style du premier block-----------------------------------------------*/
+
+#block1 {
+    /* création d'un block ou div contenant une autre div et un titre*/
+    position: relative;
+    z-index: 2;
+    width: 400px;
+    height: 280px;
+    font-size: 20px;
+    background-color: rgba(122, 54, 123, 0.7);
+    margin: auto;
+    margin-top: 70px;
+    border-radius: 20px;
+    text-align: center;
+    color: rgb(255, 255, 255);
+    box-shadow: 0px 4px 5px rgb(28, 26, 23);
+}
+
+#block1 h3 {
+    /* style du titre*/
+    font-family: zen kurenaido;
+    padding-top: 15px;
+}
+
+#diviframe {
+    /* style de la div contenant une balise iframe (video ytb)*/
+    position: relative;
+    z-index: 2;
+    width: 400px;
+    height: 200px;
+    margin-top: 0%;
+    border-radius: 20px;
+    text-align: center;
+    color: rgb(255, 255, 255);
+    box-shadow: 0px 4px 5px rgb(28, 26, 23);
+}
+
+iframe {
+    border-radius: 20px;
+}
+
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+
+
+/*-------------------------------------------------style du deuxième block--------------------------------------------*/
+
+#block2 {
+    /*création de la div contenant une autre div et un titre*/
+    position: relative;
+    z-index: 2;
+    width: 400px;
+    height: 280px;
+    font-family: zen kurenaido;
+    font-size: 30px;
+    background-color: rgba(122, 54, 123, 0.7);
+    margin: auto;
+    margin-top: 70px;
+    margin-left: 70px;
+    border-radius: 20px;
+    text-align: center;
+    color: rgb(255, 255, 255);
+    box-shadow: 0px 4px 5px rgb(28, 26, 23);
+}
+
+#block2 h3 {
+    /* style du titre*/
+    font-family: zen kurenaido;
+    padding-top: 15px;
+}
+
+#divgif {
+    /* création de la div qui a le gif en background */
+    background-image: url('https://thumbs.gfycat.com/ConfusedFreeAdder-max-14mb.gif');
+    position: relative;
+    z-index: 2;
+    width: 400px;
+    height: 200px;
+    margin-top: 0%;
+    border-radius: 20px;
+    text-align: center;
+    color: rgb(255, 255, 255);
+    box-shadow: 0px 4px 5px rgb(28, 26, 23);
+}
+
+#divgif:hover {
+    /* hover de la divgif => quand survolée autre gif s'affiche*/
+    background-image: url('https://tenor.com/view/video-games-video-game-gaming-celeste-extremely-ok-games-gif-21549243.gif');
+}
+
+
+/*--------------------------------------------------------------------------------------------------------------------*/
+
+#synopsis {
+    display: flex;
+    flex-direction: row;
+}
+
+#psynopsis {
+    color: aliceblue;
+    text-align: center;
+    padding-top: 20px;
+    position: relative;
+    z-index: 2;
+    width: 800px;
+    height: 200px;
+    font-family: zen kurenaido;
+    background-color: rgba(122, 54, 123, 0.4);
+    margin-top: 40px;
+    border-radius: 20px;
+    margin-left: 30px;
+    padding-bottom: 20px;
+    color: rgb(248, 245, 241);
+    text-align: center;
+}
+
+#manoir {
+    padding-left: 30px;
+    padding-right: 30px;
+    padding-top: 30px;
+}
+
+#obstacles {
+    display: flex;
+    flex-direction: row;
+}
+
+#pobstacles {
+    color: aliceblue;
+    text-align: center;
+    padding-top: 20px;
+    position: relative;
+    z-index: 2;
+    width: 800px;
+    height: 215px;
+    font-family: zen kurenaido;
+    background-color: rgba(122, 54, 123, 0.4);
+    margin-top: 40px;
+    border-radius: 20px;
+    margin-left: 30px;
+    padding-bottom: 20px;
+    color: rgb(248, 245, 241);
+    text-align: center;
+}
+
+#imgobstacles {
+    padding-left: 30px;
+    padding-top: 20px;
+}
+
+#Download {
+    position: relative;
+    z-index: 2;
+    width: 700px;
+    height: 100px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: rgba(122, 54, 123, 0.7);
+    margin: auto;
+    font-family: zen kurenaido;
+    font-size: 20px;
+    margin-top: 40px;
+    border-radius: 20px;
+    text-align: center;
+    color: rgb(248, 245, 241);
+    box-shadow: 0px 4px 5px rgb(28 26 23);
+}
+
+footer {
+    height: 100px;
+    width: 100%;
+    color: aliceblue;
+    text-align: center;
+    margin-top: 90px;
+    margin-bottom: 40px;
+    padding-bottom: 90px;
+    padding-top: 10px;
+    background-color: rgba(122, 54, 123, 0.7);
+}

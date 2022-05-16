@@ -1,0 +1,12 @@
+{
+    "default": 0,
+    "levels": [{
+            "name": "The awakening",
+            "path": "./assets/tilemaps/level_2.tmx"
+        },
+        {
+            "name": "Time to work",
+            "path": "./assets/tilemaps/level_2.tmx"
+        }
+    ]
+}

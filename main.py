@@ -7,6 +7,8 @@ from scripts.map import *
 from copy import * 
 from scripts.particles import *
 from scripts.text import *
+
+#Importation des scènes
 from scenes import game , menu , scene
 
 class App():
@@ -15,7 +17,7 @@ class App():
           
           pygame.init()
           self.screen = pygame.display.set_mode([750 , 550])
-          pygame.display.set_caption("Tea Mansion - v0.9.3")
+          pygame.display.set_caption("Tea Mansion - v0.9.5")
           self.scene_manager = scene.Scene_Manager()
           self.scene_manager.scenes = {
                "game":game.Game(self.screen , self.scene_manager),

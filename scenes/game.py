@@ -87,7 +87,7 @@ class Game(Scene):
           pygame.mixer.music.load("./assets/sfx/game.wav")
           pygame.mixer.music.play(loops=2000)
           
-          self.level = Level_Manager("./assets/datas/level_demo.json")
+          self.level = Level_Manager("./assets/levels.json")
           self.tilemap = self.level.tilemap
           
           pygame.mouse.set_visible(False)
