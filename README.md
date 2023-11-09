@@ -1,4 +1,4 @@
 "# tea_mansion" 
 
-Python version : 3.11
-Python modules : pygame-ce
+- Python version : 3.11
+- Python modules : pygame-ce
