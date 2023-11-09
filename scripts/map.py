@@ -71,24 +71,24 @@ class TileMap():
           
           properties = self.special_tiles[key]
           
-          rect = FloatRect(pos , pygame.Vector2(8,8))
+          rect = pygame.FRect(pos , pygame.Vector2(8,8))
           
           if properties["collider_type"] == "trap":
                if properties["orientation"] == "top":
                     rect.size = pygame.Vector2(6 , 4)
-                    rect.pos.y += 4
-                    rect.pos.x += 1
+                    rect.y += 4
+                    rect.x += 1
                elif properties["orientation"] == "down":
                     rect.size = pygame.Vector2(6 , 4)
-                    rect.pos.y -= 4
-                    rect.pos.x += 1
+                    rect.y -= 4
+                    rect.x += 1
                elif properties["orientation"] == "right":
                     rect.size = pygame.Vector2(4 , 6)
-                    rect.pos.y += 1
+                    rect.y += 1
                elif properties["orientation"] == "left":
                     rect.size = pygame.Vector2(4 , 6)
-                    rect.pos.x += 4
-                    rect.pos.y += 1
+                    rect.x += 4
+                    rect.y += 1
           
           return Collider(rect , self.special_tiles[key]["collider_type"])
           

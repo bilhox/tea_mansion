@@ -1,97 +1,88 @@
 import pygame
 import asyncio 
 
-from pygame.locals import *
 from math import *
 
-class FloatRect:
+# class FloatRect:
      
-     def __init__(self , pos : pygame.Vector2 , size : pygame.Vector2):
+#      def __init__(self , pos : pygame.Vector2 , size : pygame.Vector2):
           
-          assert size.x > 0 and size.y > 0 , "The size can't have negative values !"
-          self.pos = pos
-          self.size = size
-          self.rotation = 0
-          self.origin = pygame.Vector2(0,0)
-          self.color = [0,0,0]
-          self.border_thickness = 1
+#           assert size.x > 0 and size.y > 0 , "The size can't have negative values !"
+#           self.pos = pos
+#           self.size = size
+#           self.rotation = 0
+#           self.origin = pygame.Vector2(0,0)
+#           self.color = [0,0,0]
+#           self.border_thickness = 1
      
-     def get_vertices(self , rounded=False , offset=pygame.Vector2(0,0)):
-          vertices = [
-               self.pos - self.origin,
-               pygame.Vector2(self.right , self.pos.y) - self.origin,
-               pygame.Vector2(self.right , self.bottom) - self.origin,
-               pygame.Vector2(self.pos.x , self.bottom) - self.origin
-          ]
+#      def get_vertices(self , rounded=False , offset=pygame.Vector2(0,0)):
+#           vertices = [
+#                self.pos - self.origin,
+#                pygame.Vector2(self.right , self.pos.y) - self.origin,
+#                pygame.Vector2(self.right , self.bottom) - self.origin,
+#                pygame.Vector2(self.pos.x , self.bottom) - self.origin
+#           ]
                
-          for vertex in vertices:
-               if self.rotation != 0:
-                    vertex_center = vertex - self.pos
-                    vertex.x = vertex_center.x*cos(radians(self.rotation))-vertex_center.y*sin(radians(self.rotation))+self.pos.x
-                    vertex.y = vertex_center.x*sin(radians(self.rotation))+vertex_center.y*cos(radians(self.rotation))+self.pos.y
+#           for vertex in vertices:
+#                if self.rotation != 0:
+#                     vertex_center = vertex - self.pos
+#                     vertex.x = vertex_center.x*cos(radians(self.rotation))-vertex_center.y*sin(radians(self.rotation))+self.pos.x
+#                     vertex.y = vertex_center.x*sin(radians(self.rotation))+vertex_center.y*cos(radians(self.rotation))+self.pos.y
                
-               vertex -= offset
+#                vertex -= offset
           
-          if (rounded):
-               vertexArray = []
-               for vertex in vertices:
-                    vertexArray.append([int(vertex.x) , int(vertex.y)])
+#           if (rounded):
+#                vertexArray = []
+#                for vertex in vertices:
+#                     vertexArray.append([int(vertex.x) , int(vertex.y)])
                
-               return vertexArray
+#                return vertexArray
           
-          return vertices
+#           return vertices
      
-     def int_rect(self , offset=pygame.Vector2(0,0)):
-          return Rect((self.pos.x - self.origin.x - offset.x) , (self.pos.y - self.origin.y - offset.y), self.size.x // 1 , self.size.y // 1)
-     
-
-     def get_right(self):
-          return self.pos.x + self.size.x
+#      def int_rect(self , offset=pygame.Vector2(0,0)):
+#           return Rect((self.pos.x - self.origin.x - offset.x) , (self.pos.y - self.origin.y - offset.y), self.size.x // 1 , self.size.y // 1)
      
 
-     def set_right(self , value):
-          self.pos.x = value - self.size.x
+#      def get_right(self):
+#           return self.pos.x + self.size.x
      
 
-     def get_bottom(self):
-          return self.pos.y + self.size.y
+#      def set_right(self , value):
+#           self.pos.x = value - self.size.x
      
 
-     def set_bottom(self , value):
-          self.pos.y = value - self.size.y
+#      def get_bottom(self):
+#           return self.pos.y + self.size.y
+     
+
+#      def set_bottom(self , value):
+#           self.pos.y = value - self.size.y
           
-     def get_x(self): return self.pos.x
-     def set_x(self , value): self.pos.x = value
+#      def get_x(self): return self.pos.x
+#      def set_x(self , value): self.pos.x = value
      
-     def get_y(self): return self.pos.y
-     def set_y(self , value): self.pos.y = value
+#      def get_y(self): return self.pos.y
+#      def set_y(self , value): self.pos.y = value
           
-     right = property(get_right , set_right)
-     bottom = property(get_bottom , set_bottom)
-     x = property(get_x , set_x)
-     y = property(get_y , set_y)
+#      right = property(get_right , set_right)
+#      bottom = property(get_bottom , set_bottom)
+#      x = property(get_x , set_x)
+#      y = property(get_y , set_y)
      
-     def collidepoint(self , point : pygame.Vector2):
-          return (self.x <= point.x <= self.right and self.y <= point.y <= self.bottom)
+#      def collidepoint(self , point : pygame.Vector2):
+#           return (self.x <= point.x <= self.right and self.y <= point.y <= self.bottom)
      
-     def draw(self , surface , offset=pygame.Vector2(0,0) , ignore_transform=False):
-          if not ignore_transform:
-               pygame.draw.polygon(surface , self.color , self.get_vertices(True , offset) , self.border_thickness)
-          else:
-               pygame.draw.rect(surface , self.color , self.int_rect(offset) , self.border_thickness)
-
-
-def collide_rect(r1 : FloatRect , r2 : FloatRect):
-     
-     return (r1.pos.x < r2.pos.x + r2.size.x and
-    r1.pos.x + r1.size.x > r2.pos.x and
-    r1.pos.y < r2.pos.y + r2.size.y and 
-    r1.pos.y + r1.size.y > r2.pos.y)
+#      def draw(self , surface , offset=pygame.Vector2(0,0) , ignore_transform=False):
+#           if not ignore_transform:
+#                pygame.draw.polygon(surface , self.color , self.get_vertices(True , offset) , self.border_thickness)
+#           else:
+#                pygame.draw.rect(surface , self.color , self.int_rect(offset) , self.border_thickness)
      
 
 class Collider():
      
-     def __init__(self , rect : FloatRect , type : str):
+     def __init__(self , rect : pygame.FRect , type : str):
           self.type = type
           self.rect = rect
           self.colliders_on = []
@@ -113,10 +104,12 @@ class Collider():
                
      
      def move(self , vector : pygame.Vector2):
-          self.rect.pos += vector
+          self.rect.x += vector.x
+          self.rect.y += vector.y
           if self.colliders_on != []:
                for c in self.colliders_on:
-                    c.rect.pos += vector
+                    c.rect.x += vector.x
+                    c.rect.y += vector.y
                     # rect.pos = self.rect.pos + pygame.Vector2(rect.x - self.rect.x , rect.y - self.rect.y) + vector
           
           self.timer += 1
@@ -125,10 +118,10 @@ class Collider():
           if collider in self.colliders_on:
                return True
           else:
-               return collide_rect(self.rect , collider.rect)
+               return self.rect.colliderect(collider.rect)
                
      
-def SAT_collision(r1 : FloatRect , r2 : FloatRect):
+def SAT_collision(r1 : pygame.FRect , r2 : pygame.FRect):
      rect1 = r1.get_vertices()
      rect2 = r2.get_vertices()
      
@@ -172,7 +165,7 @@ def SAT_collision(r1 : FloatRect , r2 : FloatRect):
      r1.pos.y -= overlap * d.y / s
 				
 
-async def diag_collision(r1 : FloatRect , r2 : FloatRect):
+async def diag_collision(r1 : pygame.FRect, r2 : pygame.FRect):
      
      rect1 = r1.get_vertices()
      rect2 = r2.get_vertices()

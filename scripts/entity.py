@@ -1,7 +1,6 @@
 import pygame
 
 from math import *
-from pygame.locals import *
 from scripts.form import *
 from scripts.particles import *
 from scripts.animation import *
@@ -15,7 +14,7 @@ from copy import *
 class Sprite():
      
      def __init__(self , pos , box_size):
-          self.rect = FloatRect(pos , box_size)
+          self.rect = pygame.FRect(pos , box_size)
           self.surface = pygame.Surface([box_size.x , box_size.y])
      
      def update(self , dt , max_fps=60):
@@ -27,7 +26,7 @@ class Sprite():
 class Player(Sprite):
      
      def __init__(self , pos):
-          self.collider = Collider(FloatRect(pos , pygame.Vector2(8,12)) , "block")
+          self.collider = Collider(pygame.FRect(pos , pygame.Vector2(8,12)) , "block")
           self.keys = {"left":False , "right":False , "up":False , "down":False}
           self.dash_direction = "RIGHT"
           self.collision_side = {"left":False , "right":False , "top":False , "bottom":False}
@@ -48,7 +47,7 @@ class Player(Sprite):
           self.current_texture = texture
           
           self.chunk_pos = [int(self.rect.x // 32) , int(self.rect.y // 32)]
-          self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
+          self.map_pos = [int((self.rect.x + self.rect.width / 2) / (8*44)),int((self.rect.y + self.rect.height / 2) / (8*32))]
           
           self.sl_size = [80 , 80]
           
@@ -85,7 +84,7 @@ class Player(Sprite):
                self.speed = .8
                self.collider_check = True
           elif self.mode == 2:
-               self.set_hitbox(pygame.Vector2(6 , 6) , self.rect.size / 2 - pygame.Vector2(3 , 3))
+               self.set_hitbox(pygame.Vector2(6 , 6) , pygame.Vector2(self.rect.size) / 2 - pygame.Vector2(3 , 3))
                self.velocity = pygame.Vector2(0,0)
                self.speed = 0.6
           elif self.mode == 1:
@@ -99,7 +98,7 @@ class Player(Sprite):
                self.current_anim = self.anim_manager.get(id)  
      
      def set_hitbox(self , size : pygame.Vector2 , offset=pygame.Vector2(0,0)):
-          self.rect.pos += offset
+          self.rect.topleft += offset
           self.rect.size = size   
      
      @property
@@ -119,7 +118,7 @@ class Player(Sprite):
                     elif self.dash_direction == "LEFT":
                          motion = pygame.Vector2(randint(15 , 20) , 0)
                     self.part_sys.particles.append(Particle(
-                         self.rect.pos + (pygame.Vector2(0 , randint(1 , self.rect.size.y-1)) if not self.dash_direction == "UP" else pygame.Vector2(randint(1 , self.rect.size.x-1) , self.rect.size.y)) ,
+                         self.rect.topleft + (pygame.Vector2(0 , randint(1 , int(self.rect.height) - 1)) if not self.dash_direction == "UP" else pygame.Vector2(randint(1 , int(self.rect.width) - 1) , self.rect.height)) ,
                          motion , # mouvement
                          2 , # decay rate
                          [self.part_img].copy() , # particule images
@@ -130,7 +129,7 @@ class Player(Sprite):
                angle = radians(randint(1 , 360))
                motion = pygame.Vector2(cos(angle) * randint(5 , 10) , sin(angle) * randint(5 , 10))
                self.part_sys.particles.append(Particle(
-                    self.rect.pos + self.rect.size / 2 ,
+                    pygame.Vector2(self.rect.topleft) + pygame.Vector2(self.rect.size) / 2 ,
                     motion ,
                     .5 ,
                     [self.part_img].copy() , # particle imgs
@@ -144,7 +143,7 @@ class Player(Sprite):
      def update(self , dt , max_fps=60):
           
           self.chunk_pos = [int(self.rect.x // 32) , int(self.rect.y // 32)]
-          self.map_pos = [int((self.rect.x + self.rect.size.x / 2) / (8*44)),int((self.rect.y + self.rect.size.y / 2) / (8*32))]
+          self.map_pos = [int((self.rect.x + self.rect.width / 2) / (8*44)),int((self.rect.y + self.rect.height / 2) / (8*32))]
           self.part_sys.update(dt)
           # if the player is on a platform , update the player position
           try:
@@ -251,7 +250,7 @@ class Player(Sprite):
                     self.dead = True
                else:
                     offset.x = 0
-               self.rect.pos += offset
+               self.rect.topleft += offset
           
           if self.velocity.y >= 0.0:
                if not self.collision_side["right"] and not self.collision_side["left"] and (-0.5 >= round(self.velocity.x , 1) or round(self.velocity.x , 1) >= 0.5):
@@ -279,9 +278,9 @@ class Player(Sprite):
      def move(self , rects):
           
           if not self.collider_check:
-               self.rect.pos.x += self.current_movement.x
+               self.rect.x += self.current_movement.x
           else:
-               self.set_hitbox(pygame.Vector2(8 , 6) , pygame.Vector2(self.rect.size.x / 2 - 4 , 0))
+               self.set_hitbox(pygame.Vector2(8 , 6) , pygame.Vector2(self.rect.width / 2 - 4 , 0))
           collision_side = {"left":False , "right":False , "top":False , "bottom":False}
           if not self.kinematic:
                collided = self.collision(rects)
@@ -290,9 +289,9 @@ class Player(Sprite):
                          
                          if not self.collider_check:
                               if (self.current_movement.x < 0):
-                                   self.rect.pos.x = collider.rect.x + collider.rect.size.x
+                                   self.rect.left = collider.rect.right
                               elif (self.current_movement.x > 0):
-                                   self.rect.x = collider.rect.pos.x - self.rect.size.x
+                                   self.rect.right = collider.rect.left
                     
                          if self.rect.x < collider.rect.x:
                               collision_side["right"] = True
@@ -303,7 +302,7 @@ class Player(Sprite):
                          self.dead = True
           
           if not self.collider_check:
-               self.rect.pos.y += self.current_movement.y
+               self.rect.y += self.current_movement.y
           else:
                self.set_hitbox(pygame.Vector2(8 , 12) , pygame.Vector2(0 , 6))
                
@@ -315,11 +314,11 @@ class Player(Sprite):
                          
                          if not self.collider_check:
                               if (self.current_movement.y < 0):
-                                   self.rect.pos.y = collider.rect.y + collider.rect.size.y
+                                   self.rect.top = collider.rect.bottom
                               elif (self.current_movement.y > 0):
                                    if not self.collider.on_moving_platform and collider.move_above:
                                         self.collider.set_on_moving_platform(True , collider)
-                                   self.rect.pos.y = collider.rect.y - self.rect.size.y
+                                   self.rect.bottom = collider.rect.top
                               
                          if self.rect.y <= collider.rect.y:
                               collision_side["bottom"] = True
@@ -331,7 +330,7 @@ class Player(Sprite):
                          if (floor(self.rect.bottom - self.current_movement.y) <= collider.rect.y and self.current_movement.y > 0):
                               if not self.collider.on_moving_platform and collider.move_above:
                                    self.collider.set_on_moving_platform(True , collider)
-                              self.rect.pos.y = collider.rect.y - self.rect.size.y
+                              self.rect.y = collider.rect.y - self.rect.height
                               collision_side["bottom"] = True
                     elif (collider.type == "trap"):
                          self.dead = True
@@ -341,13 +340,13 @@ class Player(Sprite):
                     
      def display_light(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.sl_size)
-          light_offset = offset - (self.rect.size / 2 - light_size / 2)
+          light_offset = offset - (pygame.Vector2(self.rect.size) / 2 - light_size / 2)
           surface.blit(pygame.transform.scale(self.light , self.sl_size) , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
      
      def display(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           final_texture = pygame.transform.scale(self.current_texture , [self.current_texture.get_width() * self.img_scale.x , self.current_texture.get_height() * self.img_scale.y])
           text_size = final_texture.get_size()
-          text_offset = self.rect.pos - offset + pygame.Vector2(self.rect.size.x / 2 - text_size[0] / 2 , self.rect.size.y - text_size[1] if text_size[1] > self.rect.size.y else self.rect.size.y / 2 - text_size[1] / 2)
+          text_offset = self.rect.topleft - offset + pygame.Vector2(self.rect.width / 2 - text_size[0] / 2 , self.rect.height - text_size[1] if text_size[1] > self.rect.height else self.rect.height / 2 - text_size[1] / 2)
           self.part_sys.draw(surface , offset)
           surface.blit(final_texture , text_offset)
      
@@ -394,7 +393,7 @@ class Book(Sprite):
           for _ in range(amt):
                angle = radians(randint(1 , 360))
                motion = pygame.Vector2(cos(angle) * randint(60 , 80) , sin(angle) * randint(60 , 80))
-               self.part_sys.particles.append(Particle(self.rect.pos+self.rect.size / 2 , motion , 1 , [self.part_img] , .5 , choice(self.part_colors)))
+               self.part_sys.particles.append(Particle(pygame.Vector2(self.rect.topleft) + pygame.Vector2(self.rect.size) / 2 , motion , 1 , [self.part_img] , .5 , choice(self.part_colors)))
 
       
      def update(self , dt , max_fps=60):
@@ -423,16 +422,16 @@ class Book(Sprite):
      def display_light(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           light_size = pygame.Vector2(self.light.get_size())
           if self.caught:
-               light_size = pygame.Vector2([self.light.get_width()*max(self.scale_coef , 0) , self.light.get_height()*max(self.scale_coef , 0) ])
-               light_offset = offset + self.anim_offset - (self.rect.size / 2 - light_size / 2)
+               light_size = pygame.Vector2([self.light.get_width() * max(self.scale_coef , 0) , self.light.get_height() * max(self.scale_coef , 0)])
+               light_offset = offset + self.anim_offset - (pygame.Vector2(self.rect.size) / 2 - light_size / 2)
                surface.blit(pygame.transform.scale(self.light , light_size) , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
           else:
-               light_offset = offset + self.anim_offset - (self.rect.size / 2 - light_size / 2)
+               light_offset = offset + self.anim_offset - (pygame.Vector2(self.rect.size) / 2 - light_size / 2)
                surface.blit(self.light , [self.rect.x - light_offset.x , self.rect.y - light_offset.y] , special_flags=BLEND_RGB_ADD)
      
      def display(self , surface : pygame.Surface , offset):
           surf_size = pygame.Vector2(self.surface.get_size())
-          text_offset = offset+self.anim_offset-(self.rect.size / 2 - surf_size / 2)
+          text_offset = offset + self.anim_offset - (pygame.Vector2(self.rect.size) / 2 - surf_size / 2)
           self.part_sys.draw(surface , offset)
           if not self.caught:
                super().display(surface , text_offset)
@@ -459,12 +458,12 @@ class Bookshelf(Sprite):
           font = Font("./assets/fonts/small_font.png" , [255 , 255 , 255])
           
           self.book_text = Text(font , f"0 / {self.books_needed}")
-          self.book_text.pos = self.rect.pos + pygame.Vector2(self.rect.size.x / 2 - self.book_text.size.x / 2 , -self.book_text.size.y - 10)
+          self.book_text.pos = self.rect.topleft + pygame.Vector2(self.rect.width / 2 - self.book_text.size.x / 2 , -self.book_text.size.y - 10)
      
      def update_text(self):
           
           self.book_text.set_string(f"{self.n_books} / {self.books_needed}" if not self.full else "full !")
-          self.book_text.pos = self.rect.pos + pygame.Vector2(self.rect.size.x / 2 - self.book_text.size.x / 2 , -self.book_text.size.y - 10)
+          self.book_text.pos = self.rect.topleft + pygame.Vector2(self.rect.width / 2 - self.book_text.size.x / 2 , -self.book_text.size.y - 10)
      
      def deposit(self , book_carrying : list):
           if not self.full:
@@ -494,7 +493,7 @@ class Bookshelf(Sprite):
      
      def display(self , surface : pygame.Surface , offset=pygame.Vector2(0,0)):
           shadow = pygame.transform.scale(self.shadow , [self.shadow.get_width() * self.shadow_scale[0] , self.shadow.get_height() * self.shadow_scale[1]])
-          shadow_offset = self.rect.size / 2 - pygame.Vector2(shadow.get_size()) / 2
+          shadow_offset = pygame.Vector2(self.rect.size) / 2 - pygame.Vector2(shadow.get_size()) / 2
           
           surface.blit(shadow , [self.rect.x - offset.x + shadow_offset.x , self.rect.y - offset.y + shadow_offset.y])
           self.book_text.display(surface , offset=offset)
@@ -528,7 +527,7 @@ class Power(Sprite):
           for _ in range(amt):
                angle = radians(randint(1 , 360))
                motion = pygame.Vector2(cos(angle) * randint(5 , 10) , sin(angle) * randint(5 , 10))
-               self.part_sys.particles.append(Particle(self.rect.pos+self.rect.size / 2 , motion , 1 , [self.part_img] , 0.8))
+               self.part_sys.particles.append(Particle(pygame.Vector2(self.rect.topleft) + pygame.Vector2(self.rect.size) / 2 , motion , 1 , [self.part_img] , 0.8))
      
      def update(self , dt , max_fps=60):
           

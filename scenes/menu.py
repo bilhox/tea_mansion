@@ -2,7 +2,6 @@ import pygame
 import sys
 
 from scenes.scene import *
-from pygame.locals import *
 from scripts.text import *
 from scripts.button import *
 from math import cos , sin
@@ -14,7 +13,7 @@ class Menu(Scene):
           
           self.sounds = {}
           self.game_title = []
-          self.background = pygame.image.load("./assets/start_menu.png").convert_alpha()
+          self.background = pygame.transform.scale_by(pygame.image.load("./assets/start_menu.png").convert_alpha(), 3/2)
           
           fnt = Font("./assets/fonts/large_font.png" , [255,255,255])
           fnt.zoom = 4
@@ -57,7 +56,7 @@ class Menu(Scene):
           }
           }
          
-          self.start_button = Button([self.screen.get_width() / 2 - 32 ,300],[64 , 64], start_button_data)
+          self.start_button = Button([self.screen.get_width() / 2 - 32 ,self.screen.get_height() * 2/3],[64 , 64], start_button_data)
          
      def start(self):
           pygame.mouse.set_visible(True)
@@ -81,7 +80,7 @@ class Menu(Scene):
           
           for event in pygame.event.get():
                
-               if event.type == QUIT:
+               if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
 

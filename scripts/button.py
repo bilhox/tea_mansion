@@ -1,11 +1,9 @@
 import pygame
 
-from pygame.locals import *
-
 class Button():
      
      def __init__(self , pos : list[int , int] , size : list[int , int] , button_data : dict):
-          self.rect = Rect(pos , size)
+          self.rect = pygame.Rect(pos , size)
           self.case = "NOTHING"
           self.textures = []
           
@@ -35,12 +33,12 @@ class Button():
           rect = self.rect
           if ("parent" in self.data.keys()):
                parent = self.data["parent"]
-               rect = Rect([rect.x + parent.rect.x , rect.y + parent.rect.y],rect.size)
+               rect = pygame.Rect([rect.x + parent.rect.x , rect.y + parent.rect.y],rect.size)
           
-          if(event.type == MOUSEBUTTONDOWN):
+          if(event.type == pygame.MOUSEBUTTONDOWN):
                if (rect.collidepoint(event.pos)):
                     self.case = "CLICKED"
-          elif(event.type == MOUSEBUTTONUP):
+          elif(event.type == pygame.MOUSEBUTTONUP):
                if (self.case == "CLICKED" and rect.collidepoint(event.pos)):
                     if("target" in self.data.keys()):
                          if("parent" in self.data.keys()):
@@ -71,12 +69,12 @@ class Button():
           rect = self.rect
           if ("parent" in self.data.keys()):
                parent = self.data["parent"]
-               rect = Rect([rect.x + parent.rect.x , rect.y + parent.rect.y],rect.size)
+               rect = pygame.Rect([rect.x + parent.rect.x , rect.y + parent.rect.y],rect.size)
           
           if(self.current_texture.get_height() <= rect.h and self.current_texture.get_width() <= rect.w):
                screen.blit(self.current_texture , [rect.x , rect.y])
           else:
-               sub_surf = self.current_texture.subsurface(Rect([0,0],rect.size))
+               sub_surf = self.current_texture.subsurface(pygame.Rect([0,0],rect.size))
                screen.blit(sub_surf , [rect.x , rect.y])
           
           bd_keys = self.data.keys()

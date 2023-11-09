@@ -18,18 +18,18 @@ class Game(Scene):
           self.death_timer = 0
           self.map_transition = False
           
-          self.black_filter = pygame.Surface([self.camera.rect.size.x , self.camera.rect.size.y] , SRCALPHA)
+          self.black_filter = pygame.Surface([self.camera.rect.width , self.camera.rect.height] , SRCALPHA)
           self.black_filter.fill([0,0,0,80])
           
           self.particle_system = Particle_system()
           
-          self.bs_filter = pygame.Surface([self.camera.size.x , self.camera.size.y] , SRCALPHA)
+          self.bs_filter = pygame.Surface([self.camera.rect.width , self.camera.rect.height] , SRCALPHA)
           
           border = pygame.image.load("./assets/border_shadow.png").convert_alpha()
-          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.size.x , 12]) , [0 , self.camera.size.y - 8])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , -90) , [-4 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.y , 12]) , 90) , [self.camera.size.x - 8 , 0])
-          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.size.x , 12]) , 180) , [0 , -4])
+          self.bs_filter.blit(pygame.transform.scale(border , [self.camera.rect.width , 12]) , [0 , self.camera.rect.height - 8])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.rect.height , 12]) , -90) , [-4 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.rect.height , 12]) , 90) , [self.camera.rect.width - 8 , 0])
+          self.bs_filter.blit(pygame.transform.rotate(pygame.transform.scale(border , [self.camera.rect.width , 12]) , 180) , [0 , -4])
           
           self.game_timer = 0
 
@@ -48,6 +48,11 @@ class Game(Scene):
 
           for sound in self.sounds.values():
                sound.set_volume(0.2)
+          
+          self.camera.output_pos = pygame.Vector2(
+               self.screen.get_width() / 2 - self.camera.rect.width * 3/2,
+               self.screen.get_height() / 2 - self.camera.rect.height * 3/2
+          )
           
      def next_level(self):
           
@@ -71,9 +76,10 @@ class Game(Scene):
           self.player.reset_keys()
           self.player.able_to_dash = False
           self.player.air_time = 0
-          self.player.rect.pos = copy(self.tilemap.objects["player_spawn"]["coord"])
-          self.camera.pos = pygame.Vector2(self.player.map_pos)*8
-          self.camera.pos.x *= 44 ; self.camera.pos.y *= 32
+          self.player.rect.topleft = copy(self.tilemap.objects["player_spawn"]["coord"])
+          self.camera.rect.topleft = pygame.Vector2(self.player.map_pos)*8
+          self.camera.rect.x *= 44
+          self.camera.rect.y *= 32
           
           self.game_timer = 0
           self.texts["levelmd"].set_string("Level : " + self.level.name)
@@ -241,7 +247,7 @@ class Game(Scene):
           if self.map_transition:
                # Interpolating makes a progressive slow effect
                camera_center = pygame.Vector2(self.player.map_pos[0]*8*44 , self.player.map_pos[1]*8*32)
-               self.camera.pos = pygame.Vector2.lerp(self.camera.pos , camera_center , min(15*dt , 1))
+               self.camera.rect.topleft = pygame.Vector2.lerp(pygame.Vector2(self.camera.rect.topleft) , camera_center , min(15*dt , 1))
           else:
                self.player.update(dt , max_fps)
                self.player.update_lights(self.game_timer)
@@ -249,24 +255,24 @@ class Game(Scene):
                self.player.update_after_moved()
           
           # See if the camera is in the right room , transition otherwise   
-          if not self.player.dead and (not int(abs((self.player.map_pos[0]*8*44) - (self.camera.pos.x))) == 0 or not int(abs((self.player.map_pos[1]*8*32) - (self.camera.pos.y))) == 0):
+          if not self.player.dead and (not int(abs((self.player.map_pos[0]*8*44) - (self.camera.rect.x))) == 0 or not int(abs((self.player.map_pos[1]*8*32) - (self.camera.rect.y))) == 0):
                self.map_transition = True
                self.player.reset_keys()
           else:
                if self.map_transition:
-                    self.camera.pos = pygame.Vector2(self.player.map_pos[0]*8*44 , self.player.map_pos[1]*8*32)
+                    self.camera.rect.topleft = pygame.Vector2(self.player.map_pos[0]*8*44 , self.player.map_pos[1]*8*32)
                self.map_transition = False
           
           # --------------------------------------------------------------------   
           # Player death stuff
           if self.player.dead:
                if self.death_timer == 0:
-                    particle_burst(self.particle_system , self.player.rect.pos + self.player.rect.size / 2 , 40 , 80 , self.part_imgs , 0.6)
+                    particle_burst(self.particle_system , pygame.Vector2(self.player.rect.topleft) + pygame.Vector2(self.player.rect.size) / 2 , 40 , 80 , self.part_imgs , 0.6)
                self.death_timer += dt
                self.player.kinematic = True
                if (.6 - self.death_timer) <= 0:
                     self.death_timer = 0
-                    self.player.rect.pos = copy(self.tilemap.objects["player_spawn"]["coord"])
+                    self.player.rect.topleft = copy(self.tilemap.objects["player_spawn"]["coord"])
                     self.player.kinematic = False
                     self.player.dead = False
                     self.player.set_mode(0)
@@ -286,7 +292,7 @@ class Game(Scene):
           # update books and bookshelfs
           for book in self.tilemap.books:
                if not book.caught:
-                    if collide_rect(book.rect , self.player.rect):
+                    if book.rect.colliderect(self.player.rect):
                          book.is_caught()
                          self.sounds["book_gathered"].play()
                          self.book_carrying.append(book)
@@ -303,7 +309,7 @@ class Game(Scene):
                
                bookshelf.update(dt , max_fps)
           
-               if collide_rect(self.player.rect, bookshelf.rect):
+               if self.player.rect.colliderect(bookshelf.rect):
                     bookshelf.is_colliding = True
                else:
                     bookshelf.is_colliding = False
@@ -320,10 +326,10 @@ class Game(Scene):
           # Powers code
           
           for power in self.level.tilemap.powers:
-               if collide_rect(self.player.rect , power.rect) and not power.caught:
+               if self.player.rect.colliderect(power.rect) and not power.caught:
                     self.sounds["item_gathered"].play()
                     power.caught = True  
-                    particle_burst(power.part_sys , copy(power.rect.pos) , 60 , 200 , [power.part_img] , 0.2 , n_angles=2)
+                    particle_burst(power.part_sys , copy(pygame.Vector2(power.rect.topleft)) , 60 , 200 , [power.part_img] , 0.2 , n_angles=2)
                     if power.type == "dash":
                          self.player.able_to_dash = True
                     elif power.type == "orb":
@@ -340,39 +346,34 @@ class Game(Scene):
           # -----------------------------------------------------------------
           
           # Display part
-               
+
           if not self.player.dead:
-               self.player.display_light(self.black_filter , self.camera.pos)
+               self.player.display_light(self.black_filter , pygame.Vector2(self.camera.rect.topleft))
           
           
-          self.tilemap.display_layer(self.camera.render_surf ,"background",chunk=self.room_pos,offset=self.camera.pos)
-          self.tilemap.display_layer(self.camera.render_surf ,"background objects",chunk=self.room_pos,offset=self.camera.pos)
+          self.tilemap.display_layer(self.camera.render_surf ,"background",chunk=self.room_pos,offset=pygame.Vector2(self.camera.rect.topleft))
+          self.tilemap.display_layer(self.camera.render_surf ,"background objects",chunk=self.room_pos,offset=pygame.Vector2(self.camera.rect.topleft))
           for torch in self.tilemap.deco_objects:
-               torch.display(self.camera.render_surf , self.camera.pos)
+               torch.display(self.camera.render_surf , pygame.Vector2(self.camera.rect.topleft))
           
-          self.tilemap.display_layer(self.camera.render_surf ,"foreground",chunk=self.room_pos,offset=self.camera.pos)
+          self.tilemap.display_layer(self.camera.render_surf ,"foreground",chunk=self.room_pos,offset=pygame.Vector2(self.camera.rect.topleft))
           
           for bookshelf in self.level.bookshelfs:
-               bookshelf.display(self.camera.render_surf , self.camera.pos)
+               bookshelf.display(self.camera.render_surf , pygame.Vector2(self.camera.rect.topleft))
           if not self.player.dead:
-               self.player.display(self.camera.render_surf , self.camera.pos)
+               self.player.display(self.camera.render_surf , pygame.Vector2(self.camera.rect.topleft))
                
           for power in self.tilemap.powers:
-               power.display(self.camera.render_surf , self.camera.pos)
+               power.display(self.camera.render_surf , pygame.Vector2(self.camera.rect.topleft))
           
-          self.tilemap.display_layer(self.camera.render_surf ,"platforms",chunk=self.room_pos,offset=self.camera.pos)
-          self.tilemap.display_platforms(self.camera.render_surf , self.camera.pos)
-          self.particle_system.draw(self.camera.render_surf , self.camera.pos)
-          self.tilemap.display_books(self.camera.render_surf , self.camera.pos)
+          self.tilemap.display_layer(self.camera.render_surf ,"platforms",chunk=self.room_pos,offset=pygame.Vector2(self.camera.rect.topleft))
+          self.tilemap.display_platforms(self.camera.render_surf , pygame.Vector2(self.camera.rect.topleft))
+          self.particle_system.draw(self.camera.render_surf , pygame.Vector2(self.camera.rect.topleft))
+          self.tilemap.display_books(self.camera.render_surf , pygame.Vector2(self.camera.rect.topleft))
           self.camera.render_surf.blit(self.black_filter , [0,0])
           self.camera.render_surf.blit(self.bs_filter , [0,0])
           
-          cam_pos = [
-               self.screen.get_width() / 2 - self.camera.size.x,
-               self.screen.get_height() / 2 - self.camera.size.y
-          ]
-          
-          self.camera.display(self.screen , Rect(cam_pos,[704 , 512]))
+          self.camera.display(self.screen , 3)
           
           # -----------------------------------------------------------------
           # Finally , display texts that are out of the camera
